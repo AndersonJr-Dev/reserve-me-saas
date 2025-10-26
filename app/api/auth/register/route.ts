@@ -47,8 +47,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: `Erro ao criar conta: ${authError?.message || 'Erro desconhecido'}`,
-          details: authError?.details || null,
-          hint: authError?.hint || null
+          errorCode: authError?.status || null
         },
         { status: 500 }
       );
