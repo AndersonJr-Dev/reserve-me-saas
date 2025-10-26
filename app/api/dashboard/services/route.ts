@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+function getSupabaseAdmin() {
+  if (!supabaseUrl || !supabaseServiceKey) return null;
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
 
 // GET /api/dashboard/services - Buscar serviços do usuário
 export async function GET() {
@@ -15,7 +20,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
 
     // Buscar usuário autenticado
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -64,7 +70,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
     const body = await request.json();
 
     // Buscar usuário autenticado
@@ -121,7 +128,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
     const body = await request.json();
 
     // Buscar usuário autenticado
@@ -178,7 +186,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
     const { searchParams } = new URL(request.url);
     const serviceId = searchParams.get('id');
 
