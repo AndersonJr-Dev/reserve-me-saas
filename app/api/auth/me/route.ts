@@ -2,8 +2,14 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+function getSupabaseAdmin() {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !key) return null;
+  return createClient(supabaseUrl, key);
+}
 
 // GET /api/auth/me - Verificar usuário autenticado
 export async function GET() {
@@ -19,12 +25,18 @@ export async function GET() {
     }
 
     // Criar cliente com service role key para buscar dados
-    const supabaseService = createClient(
-      supabaseUrl, 
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabaseService = getSupabaseAdmin();
+    if (!supabaseService) {
+      console.error('Supabase admin credentials missing for /api/auth/me');
+      return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+    }
 
     // Criar cliente com token do usuário
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Supabase client keys missing for /api/auth/me');
+      return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+    }
+
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: {

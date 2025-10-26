@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment, Preference } from 'mercadopago';
 
-if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
-  throw new Error('MERCADOPAGO_ACCESS_TOKEN is not defined');
+function getMercadoPago() {
+  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+  if (!accessToken) return null;
+  const client = new MercadoPagoConfig({
+    accessToken,
+    options: { timeout: 5000, idempotencyKey: 'abc' }
+  });
+  return {
+    payment: new Payment(client),
+    preference: new Preference(client)
+  };
 }
-
-const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
-  options: {
-    timeout: 5000,
-    idempotencyKey: 'abc'
-  }
-});
-
-const payment = new Payment(client);
-const preference = new Preference(client);
 
 // POST /api/payment/create - Criar preferência de pagamento
 export async function POST(request: NextRequest) {
@@ -35,6 +33,12 @@ export async function POST(request: NextRequest) {
         { error: 'Dados obrigatórios não fornecidos' },
         { status: 400 }
       );
+    }
+
+    const mp = getMercadoPago();
+    if (!mp) {
+      console.error('MERCADOPAGO_ACCESS_TOKEN is not set');
+      return NextResponse.json({ error: 'Configuração do servidor de pagamento ausente' }, { status: 500 });
     }
 
     // Criar preferência de pagamento
@@ -69,7 +73,7 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    const result = await preference.create({ body: preferenceData });
+  const result = await mp.preference.create({ body: preferenceData });
 
     return NextResponse.json({
       preferenceId: result.id,
@@ -99,7 +103,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const result = await payment.get({ id: paymentId });
+    const mp = getMercadoPago();
+    if (!mp) {
+      console.error('MERCADOPAGO_ACCESS_TOKEN is not set');
+      return NextResponse.json({ error: 'Configuração do servidor de pagamento ausente' }, { status: 500 });
+    }
+
+    const result = await mp.payment.get({ id: paymentId });
 
     return NextResponse.json({
       id: result.id,

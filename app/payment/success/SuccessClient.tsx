@@ -11,26 +11,30 @@ interface Props {
   };
 }
 
+type PaymentData = {
+  id?: string;
+  transactionAmount?: number;
+} | null;
+
 export default function SuccessClient({ initial }: Props) {
   const { paymentId } = initial;
-  const [paymentData, setPaymentData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [paymentData, setPaymentData] = useState<PaymentData>(null);
+  // initialize loading to true only if we have a paymentId to fetch
+  const [loading, setLoading] = useState<boolean>(!!paymentId);
 
   useEffect(() => {
-    if (paymentId) {
-      fetch(`/api/payment/create?payment_id=${paymentId}`)
-        .then(response => response.json())
-        .then(data => {
-          setPaymentData(data);
-          setLoading(false);
-        })
-        .catch(error => {
-          console.error('Erro ao buscar dados do pagamento:', error);
-          setLoading(false);
-        });
-    } else {
-      setLoading(false);
-    }
+    if (!paymentId) return; // nothing to do
+
+    fetch(`/api/payment/create?payment_id=${paymentId}`)
+      .then(response => response.json())
+      .then(data => {
+        setPaymentData(data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Erro ao buscar dados do pagamento:', error);
+        setLoading(false);
+      });
   }, [paymentId]);
 
   if (loading) {
