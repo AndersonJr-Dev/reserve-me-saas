@@ -1,6 +1,8 @@
 import { Suspense } from 'react';
 import CadastroForm from './CadastroForm';
 
+export const dynamic = 'force-dynamic';
+
 export default function CadastroPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
