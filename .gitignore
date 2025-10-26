@@ -49,6 +49,8 @@ tsconfig.tsbuildinfo
 # Arquivos SQL de configuração do banco (não compartilhar estrutura completa)
 permanent-rls-solution.sql
 supabase-schema.sql
+update-professionals-schema.sql
+update-payment-schema.sql
 
 # Documentação de configuração (não precisa ir pro GitHub)
 # Guias de setup e configuração específicos
