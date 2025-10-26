@@ -11,10 +11,16 @@ node_modules/
 
 # Arquivos de ambiente (NUNCA COMMITAR!)
 .env
+.env.*
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
+.env.production
 .env.production.local
+.env.backup
+*.env
 
 # Logs
 npm-debug.log*
@@ -46,8 +52,32 @@ tsconfig.tsbuildinfo
 *.bak
 .cache/
 
-# Arquivos SQL de configuração do banco (não compartilhar estrutura completa)
+# Arquivos SQL e configurações de banco de dados
 permanent-rls-solution.sql
+*.sql
+!schema.sql
+!seed.sql
+**/migrations/backup
+**/database.config
+**/db.config.json
+**/supabase/config.json
+**/database.sqlite
+*.sqlite
+*.sqlite3
+*.db
+
+# Chaves e Segredos
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+/certificates
+**/secrets/
+**/credentials/
+*.keystore
+**/jwt/*.key
+**/jwt/*.pub
 supabase-schema.sql
 update-professionals-schema.sql
 update-payment-schema.sql

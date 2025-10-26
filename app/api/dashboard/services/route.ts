@@ -223,3 +223,12 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
+const nextConfig = {
+  images: {
+    domains: ['www.mercadopago.com'],
+  },
+  experimental: {
+    serverActions: true,
+  },
+};
+

@@ -138,3 +138,4 @@ export default function PaymentButton({ appointmentData, onPaymentSuccess }: Pay
     </div>
   );
 }
+

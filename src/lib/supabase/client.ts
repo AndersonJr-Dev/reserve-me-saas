@@ -1,9 +1,11 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Create the client only if environment variables are provided.
+// This avoids throwing during build-time when env vars are not set locally.
+export const supabase: SupabaseClient | null = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null
 
 // Interfaces para tipagem
 export interface Salon {
@@ -74,7 +76,8 @@ export interface User {
 export const db = {
   // Buscar salão por slug
   async getSalonBySlug(slug: string): Promise<Salon | null> {
-    const { data, error } = await supabase
+    const client = getSupabase();
+    const { data, error } = await client
       .from('salons')
       .select('*')
       .eq('slug', slug)
@@ -90,12 +93,13 @@ export const db = {
 
   // Buscar serviços de um salão
   async getServicesBySalonId(salonId: string): Promise<Service[]> {
-    const { data, error } = await supabase
-      .from('services')
-      .select('*')
-      .eq('salon_id', salonId)
-      .eq('is_active', true)
-      .order('name');
+    const client = getSupabase();
+      const { data, error } = await client
+        .from('services')
+        .select('*')
+        .eq('salon_id', salonId)
+        .eq('is_active', true)
+        .order('name');
     
     if (error) {
       console.error('Erro ao buscar serviços:', error);
@@ -107,12 +111,13 @@ export const db = {
 
   // Buscar profissionais de um salão
   async getProfessionalsBySalonId(salonId: string): Promise<Professional[]> {
-    const { data, error } = await supabase
-      .from('professionals')
-      .select('*')
-      .eq('salon_id', salonId)
-      .eq('is_active', true)
-      .order('name');
+    const client = getSupabase();
+      const { data, error } = await client
+        .from('professionals')
+        .select('*')
+        .eq('salon_id', salonId)
+        .eq('is_active', true)
+        .order('name');
     
     if (error) {
       console.error('Erro ao buscar profissionais:', error);
@@ -133,14 +138,15 @@ export const db = {
     customer_email?: string;
     status?: string;
   }): Promise<Appointment | null> {
-    const { data, error } = await supabase
-      .from('appointments')
-      .insert([{
-        ...appointmentData,
-        status: appointmentData.status || 'confirmed'
-      }])
-      .select()
-      .single();
+    const client = getSupabase();
+      const { data, error } = await client
+        .from('appointments')
+        .insert([{
+          ...appointmentData,
+          status: appointmentData.status || 'confirmed'
+        }])
+        .select()
+        .single();
     
     if (error) {
       console.error('Erro ao criar agendamento:', error);
@@ -157,11 +163,12 @@ export const db = {
     role: string;
     salon_id?: string;
   }): Promise<User | null> {
-    const { data, error } = await supabase
-      .from('users')
-      .insert([userData])
-      .select()
-      .single();
+    const client = getSupabase();
+      const { data, error } = await client
+        .from('users')
+        .insert([userData])
+        .select()
+        .single();
     
     if (error) {
       console.error('Erro ao criar usuário:', error);
@@ -173,11 +180,12 @@ export const db = {
 
   // Buscar usuário por email
   async getUserByEmail(email: string): Promise<User | null> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
+    const client = getSupabase();
+      const { data, error } = await client
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
     
     if (error) {
       console.error('Erro ao buscar usuário:', error);
@@ -197,11 +205,12 @@ export const db = {
     address?: string;
     owner_id?: string;
   }): Promise<Salon | null> {
-    const { data, error } = await supabase
-      .from('salons')
-      .insert([salonData])
-      .select()
-      .single();
+    const client = getSupabase();
+      const { data, error } = await client
+        .from('salons')
+        .insert([salonData])
+        .select()
+        .single();
     
     if (error) {
       console.error('Erro ao criar salão:', error);
@@ -211,3 +220,11 @@ export const db = {
     return data;
   }
 };
+
+  function getSupabase(): SupabaseClient {
+    if (!supabase) {
+      throw new Error('Supabase environment variables are not set. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+    }
+
+    return supabase;
+  }

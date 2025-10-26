@@ -1,20 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
-  options: {
-    timeout: 5000,
-    idempotencyKey: 'abc'
+function getMercadoPagoPayment(): Payment {
+  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+  if (!accessToken) throw new Error('MERCADOPAGO_ACCESS_TOKEN is not defined');
+
+  const client = new MercadoPagoConfig({
+    accessToken,
+    options: {
+      timeout: 5000,
+      idempotencyKey: 'abc'
+    }
+  });
+
+  return new Payment(client);
+}
+
+function getSupabaseAdmin(): SupabaseClient {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Supabase admin credentials are not set (NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)');
   }
-});
 
-const payment = new Payment(client);
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
 
 // POST /api/payment/webhook - Receber notificações do Mercado Pago
 export async function POST(request: NextRequest) {
@@ -27,8 +39,8 @@ export async function POST(request: NextRequest) {
     if (type === 'payment') {
       const paymentId = data.id;
       
-      // Buscar detalhes do pagamento
-      const paymentDetails = await payment.get({ id: paymentId });
+  // Buscar detalhes do pagamento
+  const paymentDetails = await getMercadoPagoPayment().get({ id: paymentId });
       
       console.log('Detalhes do pagamento:', {
         id: paymentDetails.id,
@@ -63,7 +75,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Atualizar agendamento no banco de dados
-      const { error: updateError } = await supabase
+      const { error: updateError } = await getSupabaseAdmin()
         .from('appointments')
         .update({
           status: appointmentStatus,
@@ -103,3 +115,4 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({ message: 'Webhook endpoint ativo' });
 }
+
