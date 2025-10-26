@@ -1,65 +1,404 @@
-import Image from "next/image";
+import Link from 'next/link';
+import { Calendar, Users, Clock, CheckCircle, Star, ArrowRight, Phone, Mail, MapPin } from 'lucide-react';
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="bg-white shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-3 sm:py-4">
+            <div className="flex items-center">
+              <div className="bg-gradient-to-r from-orange-500 to-red-500 p-2 rounded-lg">
+                <Calendar className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              </div>
+              <span className="ml-2 sm:ml-3 text-xl sm:text-2xl font-bold text-gray-900">Reserve.me</span>
+            </div>
+            <nav className="hidden lg:flex space-x-8">
+              <a href="#funcionalidades" className="text-gray-600 hover:text-orange-500 transition-colors">Funcionalidades</a>
+              <a href="#planos" className="text-gray-600 hover:text-orange-500 transition-colors">Planos</a>
+              <a href="#contato" className="text-gray-600 hover:text-orange-500 transition-colors">Contato</a>
+            </nav>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Link 
+                href="/login" 
+                className="hidden sm:inline text-gray-600 hover:text-orange-500 transition-colors font-medium text-sm sm:text-base"
+              >
+                Entrar
+              </Link>
+              <Link 
+                href="/cadastro" 
+                className="bg-orange-500 text-white px-3 py-1.5 sm:px-6 sm:py-2 rounded-lg hover:bg-orange-600 transition-colors font-medium text-sm sm:text-base"
+              >
+                <span className="hidden sm:inline">Criar Conta</span>
+                <span className="sm:hidden">Cadastro</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="bg-gradient-to-br from-orange-50 to-red-50 py-12 sm:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 px-4">
+              Sistema de Agendamento
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500"> Online</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-3xl mx-auto px-4">
+              Automatize seus agendamentos e transforme seu salão ou barbearia em um negócio que funciona 24 horas por dia. 
+              Seus clientes agendam online, você foca no que importa.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
+              <Link 
+                href="/cadastro"
+                className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-lg hover:from-orange-600 hover:to-red-600 transition-all font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              >
+                Começar Agora
+                <ArrowRight className="inline ml-2 w-4 h-4 sm:w-5 sm:h-5" />
+              </Link>
+              <Link 
+                href="/cadastro?plan=basic&trial=true"
+                className="border-2 border-orange-500 text-orange-500 px-6 py-3 sm:px-8 sm:py-4 rounded-lg hover:bg-orange-500 hover:text-white transition-all font-semibold text-base sm:text-lg"
+              >
+                Teste Grátis 7 Dias
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="funcionalidades" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Funcionalidades que Fazem a Diferença
+            </h2>
+            <p className="text-xl text-gray-600">
+              Tudo que você precisa para gerenciar seu negócio de forma profissional
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 p-8 rounded-xl hover:shadow-lg transition-shadow">
+              <div className="bg-orange-500 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
+                <Calendar className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Agendamento 24/7</h3>
+              <p className="text-gray-600">
+                Seus clientes podem agendar a qualquer hora do dia ou da noite, mesmo quando você está dormindo.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 p-8 rounded-xl hover:shadow-lg transition-shadow">
+              <div className="bg-orange-500 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Gestão de Profissionais</h3>
+              <p className="text-gray-600">
+                Organize sua equipe, defina especialidades e permita que clientes escolham seu profissional favorito.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 p-8 rounded-xl hover:shadow-lg transition-shadow">
+              <div className="bg-orange-500 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
+                <Clock className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Horários Flexíveis</h3>
+              <p className="text-gray-600">
+                Configure horários de funcionamento, intervalos e disponibilidade personalizada para cada profissional.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 p-8 rounded-xl hover:shadow-lg transition-shadow">
+              <div className="bg-orange-500 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
+                <CheckCircle className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Confirmação Automática</h3>
+              <p className="text-gray-600">
+                Sistema envia confirmações automáticas e lembretes para reduzir faltas e melhorar a experiência.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 p-8 rounded-xl hover:shadow-lg transition-shadow">
+              <div className="bg-orange-500 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
+                <Star className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Link Personalizado</h3>
+              <p className="text-gray-600">
+                Cada estabelecimento tem seu próprio link único: reserve.me/agendar/seu-salao
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 p-8 rounded-xl hover:shadow-lg transition-shadow">
+              <div className="bg-orange-500 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
+                <Phone className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Integração WhatsApp</h3>
+              <p className="text-gray-600">
+                Notificações via WhatsApp para confirmações e lembretes, mantendo contato direto com clientes.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="planos" className="py-12 sm:py-20 bg-gradient-to-br from-gray-50 to-orange-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-4">
+              Planos que Cabem no Seu Bolso
+            </h2>
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 px-4">
+              Escolha o plano ideal para o tamanho do seu negócio
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {/* Plano Gratuito */}
+            <div className="bg-white p-5 sm:p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-gray-200">
+              <div className="text-center mb-5 sm:mb-6">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Gratuito</h3>
+                <div className="text-2xl sm:text-3xl font-bold text-green-500 mb-1 sm:mb-2">R$ 0</div>
+                <div className="text-sm sm:text-base text-gray-600">/mês</div>
+              </div>
+              <ul className="space-y-2 mb-6 text-sm">
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">1 usuário (profissional autônomo)</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">1 estabelecimento</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">Agenda online</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">Página pública de agendamento</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">Gestão de serviços</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">CRM básico (clientes)</span>
+                </li>
+              </ul>
+              <Link href="/cadastro?plan=free" className="w-full bg-green-500 text-white py-2.5 sm:py-2 rounded-lg hover:bg-green-600 transition-colors font-semibold text-sm block text-center">
+                Começar Grátis
+              </Link>
+            </div>
+
+            {/* Plano Básico */}
+            <div className="bg-white p-5 sm:p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+              <div className="text-center mb-5 sm:mb-6">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Básico</h3>
+                <div className="text-2xl sm:text-3xl font-bold text-orange-500 mb-1 sm:mb-2">R$ 45</div>
+                <div className="text-sm sm:text-base text-gray-600">/mês</div>
+              </div>
+              <ul className="space-y-2 mb-6 text-sm">
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">Até 3 funcionários</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">1 estabelecimento</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">Agenda individual por funcionário</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">CRM completo com histórico</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">Relatórios simples</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">Faturamento total</span>
+                </li>
+              </ul>
+              <Link href="/cadastro?plan=basic" className="w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition-colors font-semibold text-sm block text-center">
+                Começar Agora
+              </Link>
+            </div>
+
+            {/* Plano Avançado */}
+            <div className="bg-gradient-to-br from-orange-500 to-red-500 p-5 sm:p-6 rounded-xl shadow-xl transform scale-105">
+              <div className="text-center mb-5 sm:mb-6">
+                <div className="bg-white text-orange-500 px-2 py-1 rounded-full text-xs font-semibold mb-2 sm:mb-3 inline-block">
+                  Mais Popular
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Avançado</h3>
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">R$ 90</div>
+                <div className="text-sm sm:text-base text-orange-100">/mês</div>
+              </div>
+              <ul className="space-y-2 mb-6 text-sm">
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-white mr-2 flex-shrink-0" />
+                  <span className="text-white">Até 6 funcionários</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-white mr-2 flex-shrink-0" />
+                  <span className="text-white">1 estabelecimento</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-white mr-2 flex-shrink-0" />
+                  <span className="text-white">Lembretes via WhatsApp</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-white mr-2 flex-shrink-0" />
+                  <span className="text-white">Relatórios financeiros avançados</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-white mr-2 flex-shrink-0" />
+                  <span className="text-white">Fluxo de caixa</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-white mr-2 flex-shrink-0" />
+                  <span className="text-white">Gestão de comissões</span>
+                </li>
+              </ul>
+              <Link href="/cadastro?plan=advanced" className="w-full bg-white text-orange-500 py-2 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-sm block text-center">
+                Começar Agora
+              </Link>
+            </div>
+
+            {/* Plano Premium */}
+            <div className="bg-white p-5 sm:p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow border-2 border-purple-200">
+              <div className="text-center mb-5 sm:mb-6">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Premium</h3>
+                <div className="text-2xl sm:text-3xl font-bold text-purple-600 mb-1 sm:mb-2">R$ 150</div>
+                <div className="text-sm sm:text-base text-gray-600">/mês</div>
+              </div>
+              <ul className="space-y-2 mb-6 text-sm">
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">Até 7 funcionários</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">Até 2 estabelecimentos</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">Gestão de estoque</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">Relatórios de desempenho</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">Comparativos</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">Suporte prioritário</span>
+                </li>
+              </ul>
+              <Link href="/cadastro?plan=premium" className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors font-semibold text-sm block text-center">
+                Começar Agora
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-orange-500 to-red-500">
+        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+          <h2 className="text-4xl font-bold text-white mb-6">
+            Pronto para Transformar seu Negócio?
+          </h2>
+          <p className="text-xl text-orange-100 mb-8">
+            Junte-se a centenas de salões e barbearias que já automatizaram seus agendamentos
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link 
+              href="/cadastro?plan=basic&trial=true"
+              className="bg-white text-orange-500 px-8 py-4 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg shadow-lg"
+            >
+              Teste Grátis por 7 Dias
+            </Link>
+            <Link 
+              href="mailto:contato@reserve.me?subject=Falar com Vendas"
+              className="border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-orange-500 transition-colors font-semibold text-lg"
+            >
+              Falar com Vendas
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* Footer */}
+      <footer id="contato" className="bg-gray-900 text-white py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <div className="flex items-center mb-4">
+                <div className="bg-gradient-to-r from-orange-500 to-red-500 p-2 rounded-lg">
+                  <Calendar className="w-6 h-6 text-white" />
+                </div>
+                <span className="ml-2 text-xl font-bold">Reserve.me</span>
+              </div>
+              <p className="text-gray-400">
+                A plataforma de agendamento online que seu negócio precisa para crescer.
+              </p>
+            </div>
+            
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Produto</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li><a href="#funcionalidades" className="hover:text-orange-500 transition-colors">Funcionalidades</a></li>
+                <li><a href="#planos" className="hover:text-orange-500 transition-colors">Planos</a></li>
+                <li><a href="https://docs.reserve.me" className="hover:text-orange-500 transition-colors" target="_blank" rel="noopener noreferrer">Documentação</a></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Suporte</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li><a href="mailto:contato@reserve.me" className="hover:text-orange-500 transition-colors">Central de Ajuda</a></li>
+                <li><a href="mailto:contato@reserve.me" className="hover:text-orange-500 transition-colors">Contato</a></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Contato</h3>
+              <div className="space-y-2 text-gray-400">
+                <div className="flex items-center">
+                  <Mail className="w-4 h-4 mr-2" />
+                  <span>contato@reserve.me</span>
+                </div>
+                <div className="flex items-center">
+                  <Phone className="w-4 h-4 mr-2" />
+                  <span>(11) 99999-9999</span>
+                </div>
+                <div className="flex items-center">
+                  <MapPin className="w-4 h-4 mr-2" />
+                  <span>São Paulo, SP</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
+            <p>&copy; 2024 Reserve.me. Todos os direitos reservados.</p>
+          </div>
         </div>
-      </main>
+      </footer>
     </div>
   );
 }
