@@ -127,14 +127,45 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Usuário criado na tabela users com sucesso!');
 
+    // Fazer login automático após criar conta
+    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (loginError || !loginData.session) {
+      console.error('❌ Erro ao fazer login automático:', loginError);
+      // Retornar erro mas ainda assim retornar dados do usuário
+    }
+
     console.log('🎉 Usuário criado com sucesso! Todos os passos completados.');
     
-    return NextResponse.json({
+    // Criar resposta
+    const response = NextResponse.json({
       success: true,
-      user: userData,
+      user: {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        salonId: userData.salon_id
+      },
       salon: salonData,
-      message: 'Conta criada com sucesso!'
+      message: 'Conta criada com sucesso!',
+      token: loginData?.session?.access_token || null
     });
+
+    // Salvar token no cookie
+    if (loginData?.session?.access_token) {
+      response.cookies.set('sb-access-token', loginData.session.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 // 24 horas
+      });
+    }
+
+    return response;
   } catch (error) {
     console.error('💥 Erro fatal no registro:', error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';

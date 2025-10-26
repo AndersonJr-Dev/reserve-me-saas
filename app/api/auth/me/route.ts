@@ -43,6 +43,8 @@ export async function GET(_request: NextRequest) {
       );
     }
 
+    console.log('🔍 Buscando usuário na tabela users para ID:', user.id);
+    
     // Buscar dados completos do usuário na tabela users usando service role
     const { data: userData, error: userError } = await supabaseService
       .from('users')
@@ -51,6 +53,7 @@ export async function GET(_request: NextRequest) {
       .single();
 
     if (userError || !userData) {
+      console.error('❌ Usuário não encontrado na tabela users:', userError);
       // Se não encontrar na tabela users, retornar dados básicos
       return NextResponse.json({
         user: {
@@ -62,6 +65,8 @@ export async function GET(_request: NextRequest) {
         }
       });
     }
+
+    console.log('✅ Usuário encontrado:', userData.name);
 
     return NextResponse.json({
       user: {

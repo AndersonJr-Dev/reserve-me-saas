@@ -72,6 +72,12 @@ export default function CadastroForm() {
       }
 
       const data = await response.json();
+      
+      // Salvar token se existir
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+      
       window.location.href = '/dashboard';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
