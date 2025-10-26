@@ -16,10 +16,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verificar variáveis de ambiente
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Variáveis de ambiente do Supabase não configuradas');
+      return NextResponse.json(
+        { error: 'Configuração do servidor incompleta' },
+        { status: 500 }
+      );
+    }
+
     // Criar cliente com service role key
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Criar usuário na autenticação do Supabase
+    console.log('📝 Tentando criar usuário auth com email:', email);
+    
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -31,14 +42,23 @@ export async function POST(request: NextRequest) {
     });
 
     if (authError || !authData.user) {
-      console.error('Erro ao criar usuário auth:', authError);
+      console.error('❌ Erro ao criar usuário auth:', authError);
+      console.error('❌ Detalhes do erro:', JSON.stringify(authError, null, 2));
       return NextResponse.json(
-        { error: 'Erro ao criar conta de usuário' },
+        { 
+          error: `Erro ao criar conta: ${authError?.message || 'Erro desconhecido'}`,
+          details: authError?.details || null,
+          hint: authError?.hint || null
+        },
         { status: 500 }
       );
     }
 
+    console.log('✅ Usuário auth criado com sucesso, ID:', authData.user.id);
+
     // Criar salão
+    console.log('🏢 Tentando criar salão com slug:', salon.slug);
+    
     const { data: salonData, error: salonError } = await supabase
       .from('salons')
       .insert([{
@@ -54,14 +74,27 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (salonError || !salonData) {
-      console.error('Erro ao criar salão:', salonError);
+      console.error('❌ Erro ao criar salão:', salonError);
+      console.error('❌ Detalhes:', JSON.stringify(salonError, null, 2));
+      
+      // Se falhar ao criar salão, tentar deletar o usuário auth criado
+      console.log('🧹 Limpando usuário auth criado...');
+      await supabase.auth.admin.deleteUser(authData.user.id);
+      
       return NextResponse.json(
-        { error: 'Erro ao criar estabelecimento' },
+        { 
+          error: `Erro ao criar estabelecimento: ${salonError?.message || 'Erro desconhecido'}`,
+          details: salonError?.details || null
+        },
         { status: 500 }
       );
     }
 
+    console.log('✅ Salão criado com sucesso, ID:', salonData.id);
+
     // Criar usuário na tabela users
+    console.log('👤 Tentando criar usuário na tabela users...');
+    
     const { data: userData, error: userError } = await supabase
       .from('users')
       .insert([{
@@ -76,13 +109,27 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userError || !userData) {
-      console.error('Erro ao criar usuário na tabela:', userError);
+      console.error('❌ Erro ao criar usuário na tabela:', userError);
+      console.error('❌ Detalhes:', JSON.stringify(userError, null, 2));
+      
+      // Se falhar ao criar usuário na tabela, tentar limpar o salão e usuário auth
+      console.log('🧹 Limpando dados criados...');
+      await supabase.from('salons').delete().eq('id', salonData.id);
+      await supabase.auth.admin.deleteUser(authData.user.id);
+      
       return NextResponse.json(
-        { error: 'Erro ao criar registro de usuário' },
+        { 
+          error: `Erro ao criar registro de usuário: ${userError?.message || 'Erro desconhecido'}`,
+          details: userError?.details || null
+        },
         { status: 500 }
       );
     }
 
+    console.log('✅ Usuário criado na tabela users com sucesso!');
+
+    console.log('🎉 Usuário criado com sucesso! Todos os passos completados.');
+    
     return NextResponse.json({
       success: true,
       user: userData,
@@ -90,9 +137,11 @@ export async function POST(request: NextRequest) {
       message: 'Conta criada com sucesso!'
     });
   } catch (error) {
-    console.error('Erro no registro:', error);
+    console.error('💥 Erro fatal no registro:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    console.error('💥 Stack:', error instanceof Error ? error.stack : 'N/A');
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: `Erro interno do servidor: ${errorMessage}` },
       { status: 500 }
     );
   }

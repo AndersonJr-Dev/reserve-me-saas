@@ -1,0 +1,21 @@
+# COPIE E COLE EXATAMENTE ASSIM NO VERCEL
+
+## Variável 1: SUPABASE_SERVICE_ROLE_KEY
+Key: SUPABASE_SERVICE_ROLE_KEY
+Value: [COLE A CHAVE SERVICE ROLE AQUI - É BEM LONGA]
+
+## Variável 2: NEXT_PUBLIC_SUPABASE_URL
+Key: NEXT_PUBLIC_SUPABASE_URL
+Value: https://seu-projeto.supabase.co
+
+## Variável 3: NEXT_PUBLIC_SUPABASE_ANON_KEY
+Key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+Value: [COLE A CHAVE ANON AQUI]
+
+---
+
+## IMPORTANTE:
+- Não adicione espaços antes ou depois
+- Não use aspas
+- Cole exatamente como está
+
