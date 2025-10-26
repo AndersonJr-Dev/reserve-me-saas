@@ -31,6 +31,7 @@ export default function Icon() {
             border: '4px solid white',
             borderRadius: '8px',
             position: 'relative',
+            display: 'flex',
           }}
         >
           {/* Top bar for calendar */}
