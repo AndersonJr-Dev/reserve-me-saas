@@ -32,6 +32,13 @@ export default function LoginPage() {
       }
 
       const data = await response.json();
+      
+      // O token já está salvo em cookie HTTP-only pelo servidor
+      // Salvar também no localStorage para compatibilidade
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+      
       // Redirecionar para dashboard
       window.location.href = '/dashboard';
     } catch (err) {
