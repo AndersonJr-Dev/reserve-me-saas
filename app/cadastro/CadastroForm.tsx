@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Calendar, Mail, Lock, User, ArrowRight, Building } from 'lucide-react';
 
-export default function CadastroForm() {
+function CadastroForm() {
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     name: '',
@@ -324,4 +324,6 @@ export default function CadastroForm() {
     </>
   );
 }
+
+export default CadastroForm;
 
