@@ -48,7 +48,7 @@ export async function GET(_request: NextRequest) {
     // Buscar dados completos do usuário na tabela users usando service role
     const { data: userData, error: userError } = await supabaseService
       .from('users')
-      .select('*')
+      .select('*, salons(slug)')
       .eq('id', user.id)
       .single();
 
@@ -68,13 +68,17 @@ export async function GET(_request: NextRequest) {
 
     console.log('✅ Usuário encontrado:', userData.name);
 
+    // Buscar slug do salão
+    const salonSlug = userData.salons?.slug || null;
+
     return NextResponse.json({
       user: {
         id: userData.id,
         name: userData.name,
         email: userData.email,
         role: userData.role,
-        salonId: userData.salon_id
+        salonId: userData.salon_id,
+        salonSlug: salonSlug
       }
     });
   } catch (error) {

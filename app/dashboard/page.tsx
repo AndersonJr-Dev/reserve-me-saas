@@ -10,6 +10,7 @@ interface User {
   email: string;
   role: string;
   salonId?: string;
+  salonSlug?: string;
 }
 
 export default function DashboardPage() {
@@ -46,7 +47,7 @@ export default function DashboardPage() {
   };
 
   const handleCopyLink = () => {
-    const link = `${window.location.origin}/agendar/${user?.salonId || 'seu-salao'}`;
+    const link = `${window.location.origin}/agendar/${user?.salonSlug || 'seu-salao'}`;
     navigator.clipboard.writeText(link).then(() => {
       alert('Link copiado para a área de transferência!');
     }).catch(() => {
@@ -212,7 +213,7 @@ export default function DashboardPage() {
           <div className="flex items-center space-x-4">
             <div className="flex-1 bg-gray-50 p-3 rounded-lg">
               <code className="text-sm text-gray-700">
-                {typeof window !== 'undefined' ? `${window.location.origin}/agendar/${user?.salonId || 'seu-salao'}` : 'https://reserve.me/agendar/seu-salao'}
+                {typeof window !== 'undefined' ? `${window.location.origin}/agendar/${user?.salonSlug || 'seu-salao'}` : 'https://reserve.me/agendar/seu-salao'}
               </code>
             </div>
             <button 
