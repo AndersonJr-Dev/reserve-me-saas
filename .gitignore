@@ -39,6 +39,7 @@ Thumbs.db
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+tsconfig.tsbuildinfo
 
 # Temporários
 *.tmp
@@ -57,3 +58,6 @@ CONFIGURACAO-PAGAMENTOS.md
 CHECKLIST_DEPLOY.md
 TESTAR_VARIAVEIS.md
 ADICIONAR_VARIAVEL.txt
+PASSO_A_PASSO_VERCEL.md
+VARIÁVEIS_PARA_COPIAR.txt
+SOLUCAO_RAPIDA.md
