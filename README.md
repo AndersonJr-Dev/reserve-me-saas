@@ -8,6 +8,57 @@ A ideia nasceu quando percebi que muitos profissionais do ramo de beleza e barbe
 
 O sistema é simples, direto ao ponto e focado em resolver o problema real: fazer os clientes agendarem sozinhos, 24 horas por dia, enquanto você cuida do que realmente importa.
 
+## Configuração do Mercado Pago
+
+### 1. Criar Conta no Mercado Pago
+- Acesse [mercadopago.com.br](https://mercadopago.com.br)
+- Crie uma conta de desenvolvedor
+- Acesse suas credenciais na seção "Suas integrações"
+
+### 2. Configurar Variáveis de Ambiente
+Adicione no arquivo `.env.local`:
+
+```env
+# Mercado Pago
+MERCADOPAGO_ACCESS_TOKEN=APP_USR-3624930204910165-102611-c89ff9d10d57094a4a97fff725d4caf0-433618265
+MERCADOPAGO_PUBLIC_KEY=APP_USR-5bca32b9-8570-4a01-8085-b5a384f8720c
+NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY=APP_USR-5bca32b9-8570-4a01-8085-b5a384f8720c
+NEXT_PUBLIC_BASE_URL=https://seu-dominio.com
+```
+
+### 3. Configurar Webhook
+No painel do Mercado Pago:
+- Acesse "Webhooks" nas configurações
+- Adicione a URL: `https://seu-dominio.com/api/payment/webhook`
+- Selecione os eventos: `payment`
+
+### 4. Atualizar Banco de Dados
+Execute o SQL no Supabase:
+
+```sql
+-- Adicionar campos de pagamento
+ALTER TABLE public.appointments 
+ADD COLUMN IF NOT EXISTS payment_id TEXT,
+ADD COLUMN IF NOT EXISTS payment_status TEXT,
+ADD COLUMN IF NOT EXISTS payment_amount DECIMAL(10,2),
+ADD COLUMN IF NOT EXISTS payment_method TEXT,
+ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
+```
+
+## Como Usar o Sistema de Pagamento
+
+### Para Clientes:
+1. Cliente agenda um serviço
+2. É redirecionado para página de pagamento
+3. Escolhe entre cartão ou PIX
+4. Completa o pagamento no Mercado Pago
+5. Recebe confirmação por email
+
+### Para Estabelecimentos:
+1. Recebem notificação de pagamento aprovado
+2. Podem ver status dos pagamentos no dashboard
+3. Relatórios de faturamento automáticos
+
 ## Funcionalidades Principais
 
 **Agendamento Online** - Clientes acessam o link único do estabelecimento e agendam sozinhos, qualquer hora do dia ou da noite.
