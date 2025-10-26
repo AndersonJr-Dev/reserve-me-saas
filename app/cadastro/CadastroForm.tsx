@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Calendar, Mail, Lock, User, ArrowRight, Building } from 'lucide-react';
 
-function CadastroForm() {
+export default function CadastroForm() {
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     name: '',
@@ -21,7 +21,6 @@ function CadastroForm() {
   const [error, setError] = useState('');
   const [isTrialSignup, setIsTrialSignup] = useState(false);
 
-  // Detectar se é teste grátis
   useEffect(() => {
     const plan = searchParams.get('plan');
     const trial = searchParams.get('trial');
@@ -36,7 +35,6 @@ function CadastroForm() {
     setLoading(true);
     setError('');
 
-    // Validações
     if (formData.password !== formData.confirmPassword) {
       setError('As senhas não coincidem');
       setLoading(false);
@@ -74,7 +72,6 @@ function CadastroForm() {
       }
 
       const data = await response.json();
-      // Redirecionar para dashboard
       window.location.href = '/dashboard';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
@@ -104,7 +101,6 @@ function CadastroForm() {
 
   return (
     <>
-      {/* Logo */}
       <div className="text-center mb-8">
         <Link href="/" className="inline-flex items-center">
           <div className="bg-gradient-to-r from-orange-500 to-red-500 p-3 rounded-lg">
@@ -114,7 +110,6 @@ function CadastroForm() {
         </Link>
       </div>
 
-      {/* Formulário */}
       <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">
           {isTrialSignup ? 'Teste Grátis por 7 Dias - Plano Básico' : 'Criar sua conta'}
@@ -142,7 +137,6 @@ function CadastroForm() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Dados Pessoais */}
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -181,7 +175,6 @@ function CadastroForm() {
             </div>
           </div>
 
-          {/* Senhas */}
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
@@ -220,7 +213,6 @@ function CadastroForm() {
             </div>
           </div>
 
-          {/* Dados do Estabelecimento */}
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
               <Building className="w-5 h-5 mr-2 text-orange-500" />
@@ -315,7 +307,6 @@ function CadastroForm() {
         </div>
       </div>
 
-      {/* Link para voltar */}
       <div className="text-center mt-6">
         <Link href="/" className="text-gray-600 hover:text-gray-800 text-sm">
           ← Voltar ao site
@@ -324,6 +315,3 @@ function CadastroForm() {
     </>
   );
 }
-
-export default CadastroForm;
-
