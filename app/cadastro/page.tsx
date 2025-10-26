@@ -1,6 +1,12 @@
 import { Suspense } from 'react';
 import CadastroForm from './CadastroForm';
 
+// Forçar renderização dinâmica para páginas com useSearchParams
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const dynamicParams = true;
+export const fetchCache = 'force-no-store';
+
 export default function CadastroPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
