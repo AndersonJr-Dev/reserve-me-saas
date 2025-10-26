@@ -4,7 +4,6 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Edit, Trash2, User, Users, Calendar } from 'lucide-react';
-import { supabase } from '../../../src/lib/supabase/client';
 
 type ProfessionalType = {
   id: string;
@@ -92,18 +91,23 @@ export default function ProfissionaisPage() {
     try {
       let photo_url = formData.photo_url || null;
       if (selectedFile) {
-        if (!supabase) {
-          alert('Supabase client não configurado');
-          return;
-        }
+        // Upload via endpoint server-side para usar service role (mais seguro)
         setUploading(true);
         const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
         const ext = selectedFile.name.split('.').pop() || 'jpg';
         const fileName = `${user.salonId}/${id}.${ext}`;
-        const { error } = await supabase.storage.from('avatars').upload(fileName, selectedFile);
-        if (error) throw error;
-        const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
-        photo_url = data?.publicUrl || null;
+
+        const form = new FormData();
+        form.append('file', selectedFile);
+        form.append('path', fileName);
+
+        const uploadRes = await fetch('/api/storage/upload', { method: 'POST', body: form });
+        if (!uploadRes.ok) {
+          const err = await uploadRes.json().catch(() => ({}));
+          throw new Error(err?.error || 'Erro ao fazer upload');
+        }
+        const json = await uploadRes.json();
+        photo_url = json.publicUrl || null;
         setUploading(false);
       }
 
