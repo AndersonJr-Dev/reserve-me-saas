@@ -6,10 +6,14 @@ import { Calendar, ArrowLeft, Plus, Save, X } from 'lucide-react';
 
 interface Service {
   id: string;
+  salon_id: string;
   name: string;
-  description: string;
+  description?: string;
   duration_min: number;
   price: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export default function ServicosPage() {
@@ -24,26 +28,24 @@ export default function ServicosPage() {
   });
 
   useEffect(() => {
-    // Simular carregamento de serviços
-    setTimeout(() => {
-      setServices([
-        {
-          id: '1',
-          name: 'Corte Masculino',
-          description: 'Corte moderno e estiloso',
-          duration_min: 30,
-          price: 25.00
-        },
-        {
-          id: '2',
-          name: 'Barba',
-          description: 'Aparar e modelar barba',
-          duration_min: 20,
-          price: 15.00
+    const fetchServices = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/dashboard/services');
+        if (response.ok) {
+          const data = await response.json();
+          setServices(data.services || []);
+        } else {
+          console.error('Erro ao carregar serviços');
         }
-      ]);
-      setLoading(false);
-    }, 1000);
+      } catch (error) {
+        console.error('Erro:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {

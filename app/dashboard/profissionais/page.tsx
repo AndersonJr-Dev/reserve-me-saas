@@ -6,10 +6,14 @@ import { Calendar, ArrowLeft, Plus, Save, X, Users } from 'lucide-react';
 
 interface Professional {
   id: string;
+  salon_id: string;
   name: string;
-  specialty: string;
-  phone: string;
-  email: string;
+  specialty?: string;
+  phone?: string;
+  email?: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export default function ProfissionaisPage() {
@@ -24,26 +28,24 @@ export default function ProfissionaisPage() {
   });
 
   useEffect(() => {
-    // Simular carregamento de profissionais
-    setTimeout(() => {
-      setProfessionals([
-        {
-          id: '1',
-          name: 'João Silva',
-          specialty: 'Cortes masculinos',
-          phone: '(11) 99999-1111',
-          email: 'joao@exemplo.com'
-        },
-        {
-          id: '2',
-          name: 'Maria Santos',
-          specialty: 'Cortes femininos',
-          phone: '(11) 99999-2222',
-          email: 'maria@exemplo.com'
+    const fetchProfessionals = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/dashboard/professionals');
+        if (response.ok) {
+          const data = await response.json();
+          setProfessionals(data.professionals || []);
+        } else {
+          console.error('Erro ao carregar profissionais');
         }
-      ]);
-      setLoading(false);
-    }, 1000);
+      } catch (error) {
+        console.error('Erro:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfessionals();
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
