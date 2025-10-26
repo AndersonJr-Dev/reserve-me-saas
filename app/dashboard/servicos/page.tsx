@@ -16,9 +16,17 @@ interface Service {
   updated_at?: string;
 }
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  salonId?: string;
+}
+
 export default function ServicosPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -28,6 +36,19 @@ export default function ServicosPage() {
   });
 
   useEffect(() => {
+    // Buscar dados do usuário
+    const fetchUser = async () => {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar usuário:', error);
+      }
+    };
+
     const fetchServices = async () => {
       try {
         setLoading(true);
@@ -45,14 +66,21 @@ export default function ServicosPage() {
       }
     };
 
+    fetchUser();
     fetchServices();
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user?.salonId) {
+      alert('Erro: Dados do usuário não encontrados');
+      return;
+    }
     const newService: Service = {
       id: Date.now().toString(),
-      ...formData
+      salon_id: user.salonId,
+      ...formData,
+      is_active: true
     };
     setServices([...services, newService]);
     setFormData({ name: '', description: '', duration_min: 30, price: 0 });
