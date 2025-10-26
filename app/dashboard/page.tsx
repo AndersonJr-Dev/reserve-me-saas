@@ -117,7 +117,7 @@ export default function DashboardPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Agendamentos Hoje</p>
-                <p className="text-2xl font-bold text-gray-900">12</p>
+                <p className="text-2xl font-bold text-gray-900">0</p>
               </div>
             </div>
           </div>
@@ -129,7 +129,7 @@ export default function DashboardPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Confirmados</p>
-                <p className="text-2xl font-bold text-gray-900">8</p>
+                <p className="text-2xl font-bold text-gray-900">0</p>
               </div>
             </div>
           </div>
@@ -141,7 +141,7 @@ export default function DashboardPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Profissionais</p>
-                <p className="text-2xl font-bold text-gray-900">3</p>
+                <p className="text-2xl font-bold text-gray-900">0</p>
               </div>
             </div>
           </div>
@@ -153,7 +153,7 @@ export default function DashboardPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Receita Mensal</p>
-                <p className="text-2xl font-bold text-gray-900">R$ 2.450</p>
+                <p className="text-2xl font-bold text-gray-900">R$ 0,00</p>
               </div>
             </div>
           </div>
@@ -182,26 +182,10 @@ export default function DashboardPage() {
           <div className="bg-white rounded-xl p-6 shadow-sm border">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Próximos Agendamentos</h2>
             <div className="space-y-3">
-              <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                <Clock className="w-4 h-4 text-gray-500 mr-3" />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">João Silva</p>
-                  <p className="text-sm text-gray-600">Corte Masculino - 14:00</p>
-                </div>
-              </div>
-              <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                <Clock className="w-4 h-4 text-gray-500 mr-3" />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">Maria Santos</p>
-                  <p className="text-sm text-gray-600">Manicure - 15:30</p>
-                </div>
-              </div>
-              <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                <Clock className="w-4 h-4 text-gray-500 mr-3" />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">Pedro Costa</p>
-                  <p className="text-sm text-gray-600">Barba - 16:00</p>
-                </div>
+              <div className="text-center py-8 text-gray-500">
+                <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p className="text-sm font-medium">Nenhum agendamento ainda</p>
+                <p className="text-xs mt-1">Comece adicionando serviços e compartilhe o link com seus clientes!</p>
               </div>
             </div>
           </div>
