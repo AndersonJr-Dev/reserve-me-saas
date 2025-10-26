@@ -333,7 +333,7 @@ export default function HomePage() {
               Teste Grátis por 7 Dias
             </Link>
             <Link 
-              href="mailto:contato@reserve.me?subject=Falar com Vendas"
+              href="mailto:reserve.me.suporte@gmail.com?subject=Falar com Vendas"
               className="border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-orange-500 transition-colors font-semibold text-lg"
             >
               Falar com Vendas
@@ -370,8 +370,8 @@ export default function HomePage() {
             <div>
               <h3 className="text-lg font-semibold mb-4">Suporte</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="mailto:contato@reserve.me" className="hover:text-orange-500 transition-colors">Central de Ajuda</a></li>
-                <li><a href="mailto:contato@reserve.me" className="hover:text-orange-500 transition-colors">Contato</a></li>
+                <li><a href="mailto:reserve.me.suporte@gmail.com" className="hover:text-orange-500 transition-colors">Central de Ajuda</a></li>
+                <li><a href="mailto:reserve.me.suporte@gmail.com" className="hover:text-orange-500 transition-colors">Contato</a></li>
               </ul>
             </div>
             
@@ -380,7 +380,7 @@ export default function HomePage() {
               <div className="space-y-2 text-gray-400">
                 <div className="flex items-center">
                   <Mail className="w-4 h-4 mr-2" />
-                  <span>contato@reserve.me</span>
+                  <span>reserve.me.suporte@gmail.com</span>
                 </div>
                 <div className="flex items-center">
                   <Phone className="w-4 h-4 mr-2" />

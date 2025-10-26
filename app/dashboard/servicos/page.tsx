@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Calendar, ArrowLeft, Plus, Save, X } from 'lucide-react';
+import { Calendar, ArrowLeft, Plus, Save, X, Edit, Trash2 } from 'lucide-react';
 
 interface Service {
   id: string;
@@ -28,6 +28,7 @@ export default function ServicosPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -70,21 +71,96 @@ export default function ServicosPage() {
     fetchServices();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.salonId) {
       alert('Erro: Dados do usuário não encontrados');
       return;
     }
-    const newService: Service = {
-      id: Date.now().toString(),
-      salon_id: user.salonId,
-      ...formData,
-      is_active: true
-    };
-    setServices([...services, newService]);
-    setFormData({ name: '', description: '', duration_min: 30, price: 0 });
+
+    try {
+      const serviceData = {
+        name: formData.name,
+        description: formData.description,
+        duration_min: formData.duration_min,
+        price: formData.price
+      };
+
+      if (editingService) {
+        // Atualizar serviço existente
+        const response = await fetch('/api/dashboard/services', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingService.id, ...serviceData })
+        });
+
+        if (response.ok) {
+          const { service } = await response.json();
+          setServices(services.map(s => s.id === service.id ? service : s));
+          setEditingService(null);
+        } else {
+          alert('Erro ao atualizar serviço');
+        }
+      } else {
+        // Criar novo serviço
+        const response = await fetch('/api/dashboard/services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(serviceData)
+        });
+
+        if (response.ok) {
+          const { service } = await response.json();
+          setServices([...services, service]);
+        } else {
+          alert('Erro ao criar serviço');
+        }
+      }
+
+      setFormData({ name: '', description: '', duration_min: 30, price: 0 });
+      setShowForm(false);
+    } catch (error) {
+      console.error('Erro:', error);
+      alert('Erro ao salvar serviço');
+    }
+  };
+
+  const handleEdit = (service: Service) => {
+    setEditingService(service);
+    setFormData({
+      name: service.name,
+      description: service.description || '',
+      duration_min: service.duration_min,
+      price: service.price
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (serviceId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este serviço?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/dashboard/services?id=${serviceId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        setServices(services.filter(s => s.id !== serviceId));
+      } else {
+        alert('Erro ao excluir serviço');
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      alert('Erro ao excluir serviço');
+    }
+  };
+
+  const handleCancel = () => {
     setShowForm(false);
+    setEditingService(null);
+    setFormData({ name: '', description: '', duration_min: 30, price: 0 });
   };
 
   return (
@@ -122,7 +198,9 @@ export default function ServicosPage() {
         {/* Formulário de Adicionar Serviço */}
         {showForm && (
           <div className="bg-white rounded-xl p-6 shadow-sm border mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Novo Serviço</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              {editingService ? 'Editar Serviço' : 'Novo Serviço'}
+            </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
@@ -189,7 +267,7 @@ export default function ServicosPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={handleCancel}
                   className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors flex items-center"
                 >
                   <X className="w-5 h-5 mr-2" />
@@ -227,10 +305,18 @@ export default function ServicosPage() {
                         </div>
                       </div>
                       <div className="flex space-x-2">
-                        <button className="text-orange-500 hover:text-orange-600 text-sm font-medium">
+                        <button 
+                          onClick={() => handleEdit(service)}
+                          className="text-orange-500 hover:text-orange-600 text-sm font-medium flex items-center"
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
                           Editar
                         </button>
-                        <button className="text-red-500 hover:text-red-600 text-sm font-medium">
+                        <button 
+                          onClick={() => handleDelete(service.id)}
+                          className="text-red-500 hover:text-red-600 text-sm font-medium flex items-center"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
                           Excluir
                         </button>
                       </div>
