@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, CreditCard, Smartphone, CheckCircle, XCircle } from 'lucide-react';
 
 interface AppointmentData {
@@ -24,9 +25,11 @@ export default function CheckoutClient({ initialData }: Props) {
   const [appointmentData] = useState<AppointmentData | null>(initialData || null);
   const [loading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [pixLoading, setPixLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pixResult, setPixResult] = useState<{ qrCode?: string; qrCodeBase64?: string; ticketUrl?: string } | null>(null);
 
-  const handlePayment = async () => {
+  const handlePaymentCard = async () => {
     if (!appointmentData) return;
 
     setPaymentLoading(true);
@@ -45,7 +48,8 @@ export default function CheckoutClient({ initialData }: Props) {
           price: appointmentData.price,
           customerName: appointmentData.customerName,
           customerEmail: appointmentData.customerEmail,
-          salonName: appointmentData.salonName
+          salonName: appointmentData.salonName,
+          paymentMethod: 'card'
         })
       });
 
@@ -68,6 +72,46 @@ export default function CheckoutClient({ initialData }: Props) {
       setError('Erro ao processar pagamento');
     } finally {
       setPaymentLoading(false);
+    }
+  };
+
+  const handlePaymentPix = async () => {
+    if (!appointmentData) return;
+
+    setPixLoading(true);
+    setError(null);
+    setPixResult(null);
+
+    try {
+      const response = await fetch('/api/payment/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          appointmentId: appointmentData.id,
+          serviceName: appointmentData.serviceName,
+          professionalName: appointmentData.professionalName,
+          price: appointmentData.price,
+          customerName: appointmentData.customerName,
+          customerEmail: appointmentData.customerEmail,
+          salonName: appointmentData.salonName,
+          paymentMethod: 'pix'
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setPixResult({ qrCode: data.qrCode, qrCodeBase64: data.qrCodeBase64, ticketUrl: data.ticketUrl });
+      } else {
+        setError(data.error || 'Erro ao gerar PIX');
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      setError('Erro ao gerar PIX');
+    } finally {
+      setPixLoading(false);
     }
   };
 
@@ -191,20 +235,58 @@ export default function CheckoutClient({ initialData }: Props) {
               </div>
             </div>
 
-            <button
-              onClick={handlePayment}
-              disabled={paymentLoading}
-              className="w-full bg-orange-500 text-white py-4 rounded-lg hover:bg-orange-600 transition-colors font-semibold text-lg mt-8 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {paymentLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Processando...
-                </>
-              ) : (
-                'Pagar com Mercado Pago'
-              )}
-            </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-8">
+              <button
+                onClick={handlePaymentCard}
+                disabled={paymentLoading}
+                className="w-full bg-orange-500 text-white py-4 rounded-lg hover:bg-orange-600 transition-colors font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {paymentLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Processando...
+                  </>
+                ) : (
+                  'Pagar com Cartão'
+                )}
+              </button>
+
+              <button
+                onClick={handlePaymentPix}
+                disabled={pixLoading}
+                className="w-full bg-green-600 text-white py-4 rounded-lg hover:bg-green-700 transition-colors font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {pixLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Gerando QR...
+                  </>
+                ) : (
+                  'Pagar com PIX'
+                )}
+              </button>
+            </div>
+
+            {pixResult && (pixResult.qrCodeBase64 || pixResult.ticketUrl) && (
+              <div className="mt-6 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 mb-3">QR Code PIX</h4>
+                {pixResult.qrCodeBase64 ? (
+                  <Image 
+                    src={`data:image/png;base64,${pixResult.qrCodeBase64}`} 
+                    alt="QR PIX" 
+                    width={192}
+                    height={192}
+                    className="mx-auto" 
+                  />
+                ) : null}
+                {pixResult.ticketUrl ? (
+                  <a href={pixResult.ticketUrl} target="_blank" rel="noopener noreferrer" className="block text-center mt-3 text-orange-600 hover:underline">Abrir link do PIX</a>
+                ) : null}
+                {pixResult.qrCode ? (
+                  <p className="mt-2 text-xs text-gray-500 break-all">Copia e Cola: {pixResult.qrCode}</p>
+                ) : null}
+              </div>
+            )}
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">

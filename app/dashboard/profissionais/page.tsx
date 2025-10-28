@@ -86,29 +86,36 @@ export default function ProfissionaisPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.salonId) return alert('Dados do usuário não encontrados');
 
     try {
       let photo_url = formData.photo_url || null;
-      if (selectedFile) {
+      if (selectedFile && user?.salonId) {
         // Upload via endpoint server-side para usar service role (mais seguro)
         setUploading(true);
         const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
         const ext = selectedFile.name.split('.').pop() || 'jpg';
         const fileName = `${user.salonId}/${id}.${ext}`;
 
-        const form = new FormData();
-        form.append('file', selectedFile);
-        form.append('path', fileName);
+        try {
+          const form = new FormData();
+          form.append('file', selectedFile);
+          form.append('path', fileName);
 
-        const uploadRes = await fetch('/api/storage/upload', { method: 'POST', body: form });
-        if (!uploadRes.ok) {
-          const err = await uploadRes.json().catch(() => ({}));
-          throw new Error(err?.error || 'Erro ao fazer upload');
+          const uploadRes = await fetch('/api/storage/upload', { method: 'POST', body: form });
+          const json = await uploadRes.json().catch(() => ({}));
+          if (!uploadRes.ok) {
+            console.error('Upload falhou:', json);
+            // Prosseguir sem foto
+            photo_url = null;
+          } else {
+            photo_url = json.publicUrl || null;
+          }
+        } catch (uploadErr) {
+          console.error('Erro no upload:', uploadErr);
+          photo_url = null;
+        } finally {
+          setUploading(false);
         }
-        const json = await uploadRes.json();
-        photo_url = json.publicUrl || null;
-        setUploading(false);
       }
 
       const payload = {
@@ -122,8 +129,11 @@ export default function ProfissionaisPage() {
       const method = editingProfessional ? 'PUT' : 'POST';
       const body = editingProfessional ? JSON.stringify({ id: editingProfessional.id, ...payload }) : JSON.stringify(payload);
       const res = await fetch('/api/dashboard/professionals', { method, headers: { 'Content-Type': 'application/json' }, body });
-      if (!res.ok) throw new Error('Failed');
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = json?.error || 'Erro ao criar/atualizar profissional';
+        throw new Error(msg);
+      }
       if (editingProfessional) {
         setProfessionals((p) => p.map(i => i.id === json.professional.id ? json.professional : i));
       } else {
@@ -134,9 +144,10 @@ export default function ProfissionaisPage() {
       setPreviewUrl(null);
       setShowForm(false);
       setEditingProfessional(null);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      alert('Erro ao salvar profissional');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao salvar profissional';
+      alert(errorMessage);
       setUploading(false);
     }
   };

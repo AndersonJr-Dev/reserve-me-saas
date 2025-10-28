@@ -244,10 +244,4 @@ export const db = {
   }
 };
 
-  // Mantido para possíveis usos futuros, mas evitando throw que quebra client-side
-  function getSupabase(): SupabaseClient {
-    if (!supabase) {
-      throw new Error('Supabase environment variables are not set. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
-    }
-    return supabase;
-  }
+  // Função removida pois não estava sendo utilizada

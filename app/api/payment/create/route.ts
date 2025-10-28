@@ -27,8 +27,9 @@ export async function POST(request: NextRequest) {
       customerEmail,
       salonName 
     } = body;
+    const paymentMethod = (body?.paymentMethod as string | undefined) || 'card';
 
-    if (!appointmentId || !serviceName || !price || !customerName || !customerEmail) {
+    if (!appointmentId || !serviceName || !price || !customerName) {
       return NextResponse.json(
         { error: 'Dados obrigatórios não fornecidos' },
         { status: 400 }
@@ -44,48 +45,78 @@ export async function POST(request: NextRequest) {
     // Base URL dinâmica (fallback para o origin da requisição)
     const origin = process.env.NEXT_PUBLIC_BASE_URL || new URL(request.url).origin;
 
-    // Criar preferência de pagamento
-    const preferenceData = {
-      items: [
-        {
-          id: appointmentId,
-          title: `${serviceName} - ${professionalName}`,
-          description: `Agendamento com ${professionalName} na ${salonName}`,
-          quantity: 1,
-          unit_price: parseFloat(price),
-          currency_id: 'BRL'
+    // Suporte a dois fluxos: cartão (Preference) e PIX (Payment)
+    if (paymentMethod === 'pix') {
+      const paymentData = {
+        transaction_amount: typeof price === 'string' ? parseFloat(price) : Number(price),
+        description: `${serviceName} - ${professionalName}`,
+        payment_method_id: 'pix',
+        payer: {
+          email: customerEmail || 'cliente@exemplo.com',
+          first_name: customerName
+        },
+        external_reference: appointmentId,
+        notification_url: `${origin}/api/payment/webhook`,
+        metadata: {
+          appointment_id: appointmentId,
+          salon_name: salonName,
+          professional_name: professionalName,
+          service_name: serviceName
         }
-      ],
-      payer: {
-        name: customerName,
-        email: customerEmail
-      },
-      back_urls: {
-        success: `${origin}/payment/success`,
-        failure: `${origin}/payment/failure`,
-        pending: `${origin}/payment/pending`
-      },
-      auto_return: 'approved',
-      notification_url: `${origin}/api/payment/webhook`,
-      external_reference: appointmentId,
-      payment_methods: {
-        default_payment_method_id: 'pix'
-      },
-      metadata: {
-        appointment_id: appointmentId,
-        salon_name: salonName,
-        professional_name: professionalName,
-        service_name: serviceName
-      }
-    };
+      };
 
-  const result = await mp.preference.create({ body: preferenceData });
+      const result = await mp.payment.create({ body: paymentData });
 
-    return NextResponse.json({
-      preferenceId: result.id,
-      initPoint: result.init_point,
-      sandboxInitPoint: result.sandbox_init_point
-    });
+      // Dados do PIX (QR e link)
+      const poi = result?.point_of_interaction?.transaction_data || {};
+      return NextResponse.json({
+        paymentId: result.id,
+        status: result.status,
+        qrCode: poi.qr_code,
+        qrCodeBase64: poi.qr_code_base64,
+        ticketUrl: poi.ticket_url
+      });
+    } else {
+      // Criar preferência de pagamento (cartão/checkout)
+      const preferenceData = {
+        items: [
+          {
+            id: appointmentId,
+            title: `${serviceName} - ${professionalName}`,
+            description: `Agendamento com ${professionalName} na ${salonName}`,
+            quantity: 1,
+            unit_price: typeof price === 'string' ? parseFloat(price) : Number(price),
+            currency_id: 'BRL'
+          }
+        ],
+        payer: {
+          name: customerName,
+          email: customerEmail || undefined
+        },
+        back_urls: {
+          success: `${origin}/payment/success`,
+          failure: `${origin}/payment/failure`,
+          pending: `${origin}/payment/pending`
+        },
+        auto_return: 'approved',
+        notification_url: `${origin}/api/payment/webhook`,
+        external_reference: appointmentId,
+        metadata: {
+          appointment_id: appointmentId,
+          salon_name: salonName,
+          professional_name: professionalName,
+          service_name: serviceName
+        }
+      };
+
+      const result = await mp.preference.create({ body: preferenceData });
+
+      return NextResponse.json({
+        preferenceId: result.id,
+        initPoint: result.init_point,
+        sandboxInitPoint: result.sandbox_init_point
+      });
+    }
 
   } catch (error) {
     console.error('Erro ao criar preferência de pagamento:', error);
