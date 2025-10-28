@@ -201,7 +201,7 @@ export default function ServicosPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-4">
               {editingService ? 'Editar Serviço' : 'Novo Serviço'}
             </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -212,7 +212,7 @@ export default function ServicosPage() {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-500"
                     placeholder="Ex: Corte Masculino"
                   />
                 </div>
@@ -225,10 +225,11 @@ export default function ServicosPage() {
                     required
                     value={formData.duration_min}
                     onChange={(e) => setFormData({ ...formData, duration_min: parseInt(e.target.value) })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-500"
                     min="15"
                     step="15"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Intervalos sugeridos: 15, 30, 45, 60 minutos.</p>
                 </div>
               </div>
               <div>
@@ -238,7 +239,7 @@ export default function ServicosPage() {
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-500"
                   rows={3}
                   placeholder="Descreva o serviço..."
                 />
@@ -252,10 +253,11 @@ export default function ServicosPage() {
                   required
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-500"
                   min="0"
                   step="0.01"
                 />
+                <p className="text-xs text-gray-500 mt-1">Use ponto para centavos, ex: 49.90.</p>
               </div>
               <div className="flex space-x-4">
                 <button

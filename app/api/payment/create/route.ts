@@ -41,6 +41,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Configuração do servidor de pagamento ausente' }, { status: 500 });
     }
 
+    // Base URL dinâmica (fallback para o origin da requisição)
+    const origin = process.env.NEXT_PUBLIC_BASE_URL || new URL(request.url).origin;
+
     // Criar preferência de pagamento
     const preferenceData = {
       items: [
@@ -58,13 +61,16 @@ export async function POST(request: NextRequest) {
         email: customerEmail
       },
       back_urls: {
-        success: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success`,
-        failure: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/failure`,
-        pending: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/pending`
+        success: `${origin}/payment/success`,
+        failure: `${origin}/payment/failure`,
+        pending: `${origin}/payment/pending`
       },
       auto_return: 'approved',
-      notification_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/payment/webhook`,
+      notification_url: `${origin}/api/payment/webhook`,
       external_reference: appointmentId,
+      payment_methods: {
+        default_payment_method_id: 'pix'
+      },
       metadata: {
         appointment_id: appointmentId,
         salon_name: salonName,
