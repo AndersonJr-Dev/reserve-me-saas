@@ -20,9 +20,10 @@ export default function DashboardPage() {
   const [showPlans, setShowPlans] = useState(false);
   const router = useRouter();
   const plans = [
-    { id: 'basic', title: 'Plano Básico', price: 19, description: 'Recursos essenciais para começar' },
-    { id: 'premium', title: 'Plano Premium', price: 49, description: 'Recursos avançados e maior visibilidade' },
-    { id: 'pro', title: 'Plano Pro', price: 99, description: 'Tudo incluso para negócios maiores' }
+    { id: 'free', title: 'Gratuito', price: 0, description: 'Para começar sem custo' },
+    { id: 'basic', title: 'Básico', price: 45, description: 'Até 3 funcionários, 1 estabelecimento' },
+    { id: 'advanced', title: 'Avançado', price: 90, description: 'Até 6 funcionários, relatórios avançados' },
+    { id: 'premium', title: 'Premium', price: 150, description: 'Até 7 funcionários, até 2 estabelecimentos' }
   ];
 
   const handleChoosePlan = (plan: { id: string; title: string; price: number }) => {

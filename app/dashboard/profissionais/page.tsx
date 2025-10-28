@@ -164,7 +164,7 @@ export default function ProfissionaisPage() {
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Voltar
               </Link>
-              <div className="bg-linear-to-r from-orange-500 to-red-500 p-2 rounded-lg">
+              <div className="bg-gradient-to-r from-orange-500 to-red-500 p-2 rounded-lg">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
               <span className="ml-2 text-xl font-bold text-gray-900">Reserve.me</span>

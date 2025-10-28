@@ -119,8 +119,11 @@ export const db = {
 
   // Buscar profissionais de um salão
   async getProfessionalsBySalonId(salonId: string): Promise<Professional[]> {
-    const client = getSupabase();
-      const { data, error } = await client
+    if (!supabase) {
+      console.error('Cliente Supabase não inicializado');
+      return [];
+    }
+      const { data, error } = await supabase
         .from('professionals')
         .select('*')
         .eq('salon_id', salonId)
@@ -146,8 +149,11 @@ export const db = {
     customer_email?: string;
     status?: string;
   }): Promise<Appointment | null> {
-    const client = getSupabase();
-      const { data, error } = await client
+    if (!supabase) {
+      console.error('Cliente Supabase não inicializado');
+      return null;
+    }
+      const { data, error } = await supabase
         .from('appointments')
         .insert([{
           ...appointmentData,
@@ -171,8 +177,11 @@ export const db = {
     role: string;
     salon_id?: string;
   }): Promise<User | null> {
-    const client = getSupabase();
-      const { data, error } = await client
+    if (!supabase) {
+      console.error('Cliente Supabase não inicializado');
+      return null;
+    }
+      const { data, error } = await supabase
         .from('users')
         .insert([userData])
         .select()
@@ -188,8 +197,11 @@ export const db = {
 
   // Buscar usuário por email
   async getUserByEmail(email: string): Promise<User | null> {
-    const client = getSupabase();
-      const { data, error } = await client
+    if (!supabase) {
+      console.error('Cliente Supabase não inicializado');
+      return null;
+    }
+      const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('email', email)
@@ -213,8 +225,11 @@ export const db = {
     address?: string;
     owner_id?: string;
   }): Promise<Salon | null> {
-    const client = getSupabase();
-      const { data, error } = await client
+    if (!supabase) {
+      console.error('Cliente Supabase não inicializado');
+      return null;
+    }
+      const { data, error } = await supabase
         .from('salons')
         .insert([salonData])
         .select()
@@ -229,10 +244,10 @@ export const db = {
   }
 };
 
+  // Mantido para possíveis usos futuros, mas evitando throw que quebra client-side
   function getSupabase(): SupabaseClient {
     if (!supabase) {
       throw new Error('Supabase environment variables are not set. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
     }
-
     return supabase;
   }
