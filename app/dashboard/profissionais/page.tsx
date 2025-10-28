@@ -184,28 +184,41 @@ export default function ProfissionaisPage() {
         {showForm && (
           <div className="bg-white rounded-xl p-6 shadow-sm border mb-8">
             <h2 className="text-xl font-bold text-gray-900 mb-4">{editingProfessional ? 'Editar' : 'Novo'} Profissional</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
-                <input required placeholder="Nome" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="p-3 border rounded text-gray-900 placeholder-gray-500" />
-                <input placeholder="Especialidade" value={formData.specialty} onChange={(e) => setFormData({ ...formData, specialty: e.target.value })} className="p-3 border rounded text-gray-900 placeholder-gray-500" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nome</label>
+                  <input required placeholder="Ex: Maria Silva" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Especialidade</label>
+                  <input placeholder="Ex: Manicure, Barbeiro" value={formData.specialty} onChange={(e) => setFormData({ ...formData, specialty: e.target.value })} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-500" />
+                </div>
               </div>
               <div className="grid md:grid-cols-2 gap-4">
-                <input placeholder="Telefone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="p-3 border rounded text-gray-900 placeholder-gray-500" />
-                <input type="email" placeholder="Email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="p-3 border rounded text-gray-900 placeholder-gray-500" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Telefone</label>
+                  <input placeholder="(00) 00000-0000" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input type="email" placeholder="email@exemplo.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 placeholder-gray-500" />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Foto do Profissional</label>
                 <div className="flex items-center space-x-4">
-                  <input type="file" accept="image/*" onChange={(e) => handleFileSelect(e.target.files?.[0] || null)} />
+                  <input type="file" accept="image/*" onChange={(e) => handleFileSelect(e.target.files?.[0] || null)} className="text-sm" />
                   <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden">
                     {previewUrl ? <img src={previewUrl} className="w-full h-full object-cover" alt="preview" /> : <User className="w-8 h-8 text-gray-400 m-3" />}
                   </div>
                 </div>
-                {uploading && <p className="text-sm text-blue-600 mt-1">Enviando imagem...</p>}
+                {uploading && <p className="text-sm text-orange-600 mt-1">Enviando imagem...</p>}
+                <p className="text-xs text-gray-500 mt-1">Formatos suportados: JPG, PNG. Tamanho máximo: 3MB.</p>
               </div>
               <div className="flex space-x-2">
-                <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">Salvar</button>
-                <button type="button" onClick={() => { setShowForm(false); setEditingProfessional(null); }} className="bg-gray-300 px-4 py-2 rounded">Cancelar</button>
+                <button type="submit" className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors">Salvar</button>
+                <button type="button" onClick={() => { setShowForm(false); setEditingProfessional(null); }} className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">Cancelar</button>
               </div>
             </form>
           </div>
