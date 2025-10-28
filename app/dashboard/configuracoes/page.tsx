@@ -22,50 +22,89 @@ interface SalonSettings {
   };
 }
 
+const defaultSettings: SalonSettings = {
+  name: '',
+  slug: '',
+  description: '',
+  phone: '',
+  email: '',
+  address: '',
+  workingHours: {
+    monday: { open: '09:00', close: '18:00', closed: false },
+    tuesday: { open: '09:00', close: '18:00', closed: false },
+    wednesday: { open: '09:00', close: '18:00', closed: false },
+    thursday: { open: '09:00', close: '18:00', closed: false },
+    friday: { open: '09:00', close: '18:00', closed: false },
+    saturday: { open: '10:00', close: '16:00', closed: false },
+    sunday: { open: '00:00', close: '00:00', closed: true }
+  }
+};
+
 export default function ConfiguracoesPage() {
-  const [settings, setSettings] = useState<SalonSettings>({
-    name: 'Barbearia Estilo',
-    slug: 'barbearia-estilo',
-    description: 'A melhor barbearia da cidade',
-    phone: '(11) 99999-9999',
-    email: 'contato@barbeariaestilo.com',
-    address: 'Rua das Flores, 123',
-    workingHours: {
-      monday: { open: '08:00', close: '18:00', closed: false },
-      tuesday: { open: '08:00', close: '18:00', closed: false },
-      wednesday: { open: '08:00', close: '18:00', closed: false },
-      thursday: { open: '08:00', close: '18:00', closed: false },
-      friday: { open: '08:00', close: '18:00', closed: false },
-      saturday: { open: '08:00', close: '16:00', closed: false },
-      sunday: { open: '08:00', close: '16:00', closed: true }
-    }
-  });
+  const [settings, setSettings] = useState<SalonSettings>(defaultSettings);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!settings) return;
     setLoading(true);
-    
-    // Simular salvamento
-    setTimeout(() => {
+    setErrorMsg(null);
+
+    try {
+      const res = await fetch('/api/dashboard/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: settings.name,
+          slug: settings.slug,
+          description: settings.description,
+          phone: settings.phone,
+          email: settings.email,
+          address: settings.address,
+          workingHours: settings.workingHours
+        })
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        setErrorMsg(json?.error || 'Erro ao salvar configurações');
+      } else {
+        setSaved(true);
+        // Atualizar estado com resposta do servidor se houver
+        if (json?.salon) {
+          const s = json.salon;
+          setSettings(prev => ({
+            name: s.name || prev?.name || '',
+            slug: s.slug || prev?.slug || '',
+            description: s.description || prev?.description || '',
+            phone: s.phone || prev?.phone || '',
+            email: s.email || prev?.email || '',
+            address: s.address || prev?.address || '',
+            workingHours: s.working_hours || prev?.workingHours || prev!.workingHours
+          } as SalonSettings));
+        }
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : String(err));
+    } finally {
       setLoading(false);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    }, 1000);
+    }
   };
 
   const updateWorkingHours = (day: keyof SalonSettings['workingHours'], field: 'open' | 'close' | 'closed', value: string | boolean) => {
-    setSettings({
-      ...settings,
+    setSettings(prev => ({
+      ...prev,
       workingHours: {
-        ...settings.workingHours,
+        ...prev.workingHours,
         [day]: {
-          ...settings.workingHours[day],
+          ...prev.workingHours[day],
           [field]: value
         }
       }
-    });
+    }));
   };
 
   const days = [
@@ -111,6 +150,11 @@ export default function ConfiguracoesPage() {
             ✅ Configurações salvas com sucesso!
           </div>
         )}
+        {errorMsg && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6">
+            ❌ {errorMsg}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Informações Básicas */}
@@ -128,8 +172,8 @@ export default function ConfiguracoesPage() {
                 <input
                   type="text"
                   required
-                  value={settings.name}
-                  onChange={(e) => setSettings({ ...settings, name: e.target.value })}
+                  value={settings?.name || ''}
+                  onChange={(e) => setSettings(prev => prev ? { ...prev, name: e.target.value } : prev)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
                 />
               </div>
@@ -144,8 +188,8 @@ export default function ConfiguracoesPage() {
                   <input
                     type="text"
                     required
-                    value={settings.slug}
-                    onChange={(e) => setSettings({ ...settings, slug: e.target.value })}
+                    value={settings?.slug || ''}
+                    onChange={(e) => setSettings(prev => prev ? { ...prev, slug: e.target.value } : prev)}
                     className="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
                   />
                 </div>
@@ -157,8 +201,8 @@ export default function ConfiguracoesPage() {
                 Descrição
               </label>
               <textarea
-                value={settings.description}
-                onChange={(e) => setSettings({ ...settings, description: e.target.value })}
+                value={settings?.description || ''}
+                onChange={(e) => setSettings(prev => prev ? { ...prev, description: e.target.value } : prev)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
                 rows={3}
               />
@@ -172,8 +216,8 @@ export default function ConfiguracoesPage() {
                 </label>
                 <input
                   type="tel"
-                  value={settings.phone}
-                  onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
+                  value={settings?.phone || ''}
+                  onChange={(e) => setSettings(prev => prev ? { ...prev, phone: e.target.value } : prev)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
                 />
               </div>
@@ -184,8 +228,8 @@ export default function ConfiguracoesPage() {
                 </label>
                 <input
                   type="email"
-                  value={settings.email}
-                  onChange={(e) => setSettings({ ...settings, email: e.target.value })}
+                  value={settings?.email || ''}
+                  onChange={(e) => setSettings(prev => prev ? { ...prev, email: e.target.value } : prev)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
                 />
               </div>
@@ -196,8 +240,8 @@ export default function ConfiguracoesPage() {
                 </label>
                 <input
                   type="text"
-                  value={settings.address}
-                  onChange={(e) => setSettings({ ...settings, address: e.target.value })}
+                  value={settings?.address || ''}
+                  onChange={(e) => setSettings(prev => prev ? { ...prev, address: e.target.value } : prev)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
                 />
               </div>

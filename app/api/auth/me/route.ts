@@ -80,8 +80,19 @@ export async function GET() {
 
     console.log('✅ Usuário encontrado:', userData.name);
 
-    // Buscar slug do salão
-    const salonSlug = userData.salons?.slug || null;
+    // Buscar slug do salão com fallback se relação não estiver configurada
+    let salonSlug = userData.salons?.slug || null;
+    if (!salonSlug && userData.salon_id) {
+      const { data: salonData, error: salonError } = await supabaseService
+        .from('salons')
+        .select('slug')
+        .eq('id', userData.salon_id)
+        .single();
+
+      if (!salonError && salonData?.slug) {
+        salonSlug = salonData.slug;
+      }
+    }
 
     return NextResponse.json({
       user: {
@@ -90,7 +101,7 @@ export async function GET() {
         email: userData.email,
         role: userData.role,
         salonId: userData.salon_id,
-        salonSlug: salonSlug
+        salonSlug
       }
     });
   } catch (error) {

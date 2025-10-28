@@ -186,12 +186,12 @@ export default function ProfissionaisPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-4">{editingProfessional ? 'Editar' : 'Novo'} Profissional</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
-                <input required placeholder="Nome" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="p-3 border rounded" />
-                <input placeholder="Especialidade" value={formData.specialty} onChange={(e) => setFormData({ ...formData, specialty: e.target.value })} className="p-3 border rounded" />
+                <input required placeholder="Nome" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="p-3 border rounded text-gray-900 placeholder-gray-500" />
+                <input placeholder="Especialidade" value={formData.specialty} onChange={(e) => setFormData({ ...formData, specialty: e.target.value })} className="p-3 border rounded text-gray-900 placeholder-gray-500" />
               </div>
               <div className="grid md:grid-cols-2 gap-4">
-                <input placeholder="Telefone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="p-3 border rounded" />
-                <input type="email" placeholder="Email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="p-3 border rounded" />
+                <input placeholder="Telefone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="p-3 border rounded text-gray-900 placeholder-gray-500" />
+                <input type="email" placeholder="Email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="p-3 border rounded text-gray-900 placeholder-gray-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Foto do Profissional</label>

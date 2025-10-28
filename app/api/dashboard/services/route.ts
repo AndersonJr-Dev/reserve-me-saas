@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 function getSupabaseAdmin() {
   if (!supabaseUrl || !supabaseServiceKey) return null;
@@ -20,18 +21,22 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+  const supabaseService = getSupabaseAdmin();
+  if (!supabaseService || !supabaseUrl || !supabaseAnonKey) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${accessToken}` } }
+    });
 
     // Buscar usuário autenticado
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
     // Buscar dados do usuário para pegar o salon_id
-    const { data: userData } = await supabase
+    const { data: userData } = await supabaseService
       .from('users')
       .select('salon_id')
       .eq('id', user.id)
@@ -42,7 +47,7 @@ export async function GET() {
     }
 
     // Buscar serviços do salão
-    const { data: services, error: servicesError } = await supabase
+    const { data: services, error: servicesError } = await supabaseService
       .from('services')
       .select('*')
       .eq('salon_id', userData.salon_id)
@@ -70,19 +75,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+  const supabaseService = getSupabaseAdmin();
+  if (!supabaseService || !supabaseUrl || !supabaseAnonKey) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${accessToken}` } }
+    });
     const body = await request.json();
 
     // Buscar usuário autenticado
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
     // Buscar dados do usuário para pegar o salon_id
-    const { data: userData } = await supabase
+    const { data: userData } = await supabaseService
       .from('users')
       .select('salon_id')
       .eq('id', user.id)
@@ -92,15 +100,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Salão não encontrado' }, { status: 404 });
     }
 
-    // Criar serviço
-    const { data: service, error: serviceError } = await supabase
+    // Criar serviço (com tipos numéricos corretos)
+    const { data: service, error: serviceError } = await supabaseService
       .from('services')
       .insert({
         salon_id: userData.salon_id,
         name: body.name,
-        description: body.description,
-        duration_min: body.duration_min,
-        price: body.price,
+        description: body.description || null,
+        duration_min: Number(body.duration_min),
+        price: Number(body.price),
         is_active: true
       })
       .select()
@@ -128,19 +136,22 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+  const supabaseService = getSupabaseAdmin();
+  if (!supabaseService || !supabaseUrl || !supabaseAnonKey) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${accessToken}` } }
+    });
     const body = await request.json();
 
     // Buscar usuário autenticado
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
     // Buscar dados do usuário para pegar o salon_id
-    const { data: userData } = await supabase
+    const { data: userData } = await supabaseService
       .from('users')
       .select('salon_id')
       .eq('id', user.id)
@@ -151,7 +162,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Atualizar serviço
-    const { data: service, error: serviceError } = await supabase
+    const { data: service, error: serviceError } = await supabaseService
       .from('services')
       .update({
         name: body.name,
@@ -186,8 +197,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+  const supabaseService = getSupabaseAdmin();
+  if (!supabaseService || !supabaseUrl || !supabaseAnonKey) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${accessToken}` } }
+    });
     const { searchParams } = new URL(request.url);
     const serviceId = searchParams.get('id');
 
@@ -196,14 +210,14 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Buscar usuário autenticado
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
     // Buscar dados do usuário para pegar o salon_id
-    const { data: userData } = await supabase
+    const { data: userData } = await supabaseService
       .from('users')
       .select('salon_id')
       .eq('id', user.id)
@@ -214,7 +228,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Excluir serviço
-    const { error: serviceError } = await supabase
+    const { error: serviceError } = await supabaseService
       .from('services')
       .delete()
       .eq('id', serviceId)
@@ -231,13 +245,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
   }
 }
-
-const nextConfig = {
-  images: {
-    domains: ['www.mercadopago.com'],
-  },
-  experimental: {
-    serverActions: true,
-  },
-};
 

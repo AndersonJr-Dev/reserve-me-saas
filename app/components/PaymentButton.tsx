@@ -46,7 +46,8 @@ export default function PaymentButton({ appointmentData, onPaymentSuccess }: Pay
       const data = await response.json();
 
       if (response.ok) {
-        // Redirecionar para o Mercado Pago
+        // Notificar sucesso e redirecionar para o Mercado Pago
+        onPaymentSuccess?.();
         window.location.href = data.initPoint;
       } else {
         setError(data.error || 'Erro ao processar pagamento');
