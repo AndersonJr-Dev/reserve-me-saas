@@ -20,9 +20,10 @@ export default function DashboardPage() {
   const [showPlans, setShowPlans] = useState(false);
   const router = useRouter();
   const plans = [
-    { id: 'basic', title: 'Plano Básico', price: 19, description: 'Recursos essenciais para começar' },
-    { id: 'premium', title: 'Plano Premium', price: 49, description: 'Recursos avançados e maior visibilidade' },
-    { id: 'pro', title: 'Plano Pro', price: 99, description: 'Tudo incluso para negócios maiores' }
+    { id: 'free', title: 'Gratuito', price: 0, description: 'Para começar sem custo' },
+    { id: 'basic', title: 'Básico', price: 45, description: 'Até 3 funcionários • 1 estabelecimento' },
+    { id: 'advanced', title: 'Avançado', price: 90, description: 'Até 6 funcionários • Relatórios avançados' },
+    { id: 'premium', title: 'Premium', price: 150, description: 'Até 7 funcionários • Até 2 estabelecimentos' }
   ];
 
   const handleChoosePlan = (plan: { id: string; title: string; price: number }) => {
@@ -239,15 +240,20 @@ export default function DashboardPage() {
                 <button onClick={() => setShowPlans(false)} className="text-gray-600">Fechar</button>
               </div>
               <div className="grid gap-4">
-                {plans.map((p) => (
-                  <div key={p.id} className="border rounded p-4 flex justify-between items-center">
+                {plans.filter(p => p.id !== 'free').map((p) => (
+                  <div key={p.id} className="border rounded-lg p-4 flex justify-between items-center hover:shadow-sm transition-shadow">
                     <div>
-                      <div className="font-semibold">{p.title}</div>
-                      <div className="text-sm text-gray-600">{p.description}</div>
+                      <div className="font-semibold text-gray-900 flex items-center">
+                        {p.title}
+                        {p.id === 'advanced' && (
+                          <span className="ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">Popular</span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">{p.description}</div>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <div className="text-orange-500 font-bold">R$ {p.price.toFixed(2)}</div>
-                      <button onClick={() => handleChoosePlan(p)} className="bg-orange-500 text-white px-3 py-2 rounded">Escolher</button>
+                      <div className="text-orange-600 font-bold">R$ {p.price.toFixed(2)}<span className="text-sm text-gray-500">/mês</span></div>
+                      <button onClick={() => handleChoosePlan(p)} className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors">Escolher</button>
                     </div>
                   </div>
                 ))}
