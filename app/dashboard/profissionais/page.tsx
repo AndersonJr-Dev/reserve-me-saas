@@ -4,7 +4,6 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Edit, Trash2, User, Users, Calendar } from 'lucide-react';
-import { supabase } from '../../../src/lib/supabase/client';
 
 type ProfessionalType = {
   id: string;
@@ -92,18 +91,23 @@ export default function ProfissionaisPage() {
     try {
       let photo_url = formData.photo_url || null;
       if (selectedFile) {
-        if (!supabase) {
-          alert('Supabase client não configurado');
-          return;
-        }
+        // Upload via endpoint server-side para usar service role (mais seguro)
         setUploading(true);
         const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
         const ext = selectedFile.name.split('.').pop() || 'jpg';
         const fileName = `${user.salonId}/${id}.${ext}`;
-        const { error } = await supabase.storage.from('avatars').upload(fileName, selectedFile);
-        if (error) throw error;
-        const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
-        photo_url = data?.publicUrl || null;
+
+        const form = new FormData();
+        form.append('file', selectedFile);
+        form.append('path', fileName);
+
+        const uploadRes = await fetch('/api/storage/upload', { method: 'POST', body: form });
+        if (!uploadRes.ok) {
+          const err = await uploadRes.json().catch(() => ({}));
+          throw new Error(err?.error || 'Erro ao fazer upload');
+        }
+        const json = await uploadRes.json();
+        photo_url = json.publicUrl || null;
         setUploading(false);
       }
 
@@ -182,12 +186,12 @@ export default function ProfissionaisPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-4">{editingProfessional ? 'Editar' : 'Novo'} Profissional</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
-                <input required placeholder="Nome" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="p-3 border rounded" />
-                <input placeholder="Especialidade" value={formData.specialty} onChange={(e) => setFormData({ ...formData, specialty: e.target.value })} className="p-3 border rounded" />
+                <input required placeholder="Nome" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="p-3 border rounded text-gray-900 placeholder-gray-500" />
+                <input placeholder="Especialidade" value={formData.specialty} onChange={(e) => setFormData({ ...formData, specialty: e.target.value })} className="p-3 border rounded text-gray-900 placeholder-gray-500" />
               </div>
               <div className="grid md:grid-cols-2 gap-4">
-                <input placeholder="Telefone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="p-3 border rounded" />
-                <input type="email" placeholder="Email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="p-3 border rounded" />
+                <input placeholder="Telefone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="p-3 border rounded text-gray-900 placeholder-gray-500" />
+                <input type="email" placeholder="Email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="p-3 border rounded text-gray-900 placeholder-gray-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Foto do Profissional</label>

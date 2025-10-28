@@ -76,8 +76,12 @@ export interface User {
 export const db = {
   // Buscar salão por slug
   async getSalonBySlug(slug: string): Promise<Salon | null> {
-    const client = getSupabase();
-    const { data, error } = await client
+    if (!supabase) {
+      console.error('Cliente Supabase não inicializado');
+      return null;
+    }
+
+    const { data, error } = await supabase
       .from('salons')
       .select('*')
       .eq('slug', slug)
@@ -93,8 +97,12 @@ export const db = {
 
   // Buscar serviços de um salão
   async getServicesBySalonId(salonId: string): Promise<Service[]> {
-    const client = getSupabase();
-      const { data, error } = await client
+    if (!supabase) {
+      console.error('Cliente Supabase não inicializado');
+      return [];
+    }
+
+      const { data, error } = await supabase
         .from('services')
         .select('*')
         .eq('salon_id', salonId)

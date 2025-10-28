@@ -1,4 +1,4 @@
- 'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -92,7 +92,7 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
               <Link href="/" className="flex items-center">
-                <div className="bg-linear-to-r from-orange-500 to-red-500 p-2 rounded-lg">
+                <div className="bg-gradient-to-r from-orange-500 to-red-500 p-2 rounded-lg">
                   <Calendar className="w-6 h-6 text-white" />
                 </div>
                 <span className="ml-2 text-xl font-bold text-gray-900">Reserve.me</span>
@@ -115,7 +115,7 @@ export default function DashboardPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
-        <div className="bg-linear-to-r from-orange-500 to-red-500 rounded-xl p-8 text-white mb-8">
+        <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-xl p-8 text-white mb-8">
           <h1 className="text-3xl font-bold mb-2">Bem Vindo, {user?.name}!</h1>
           <p className="text-orange-100">
             Gerencie seus agendamentos e configure seu estabelecimento

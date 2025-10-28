@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 function getSupabaseAdmin() {
   if (!supabaseUrl || !supabaseServiceKey) return null;
@@ -20,18 +21,22 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+  const supabaseService = getSupabaseAdmin();
+  if (!supabaseService || !supabaseUrl || !supabaseAnonKey) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${accessToken}` } }
+    });
 
     // Buscar usuário autenticado
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
     // Buscar dados do usuário para pegar o salon_id
-    const { data: userData } = await supabase
+    const { data: userData } = await supabaseService
       .from('users')
       .select('salon_id')
       .eq('id', user.id)
@@ -42,7 +47,7 @@ export async function GET() {
     }
 
     // Buscar profissionais do salão
-    const { data: professionals, error: professionalsError } = await supabase
+    const { data: professionals, error: professionalsError } = await supabaseService
       .from('professionals')
       .select('*')
       .eq('salon_id', userData.salon_id)
@@ -70,19 +75,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+  const supabaseService = getSupabaseAdmin();
+  if (!supabaseService || !supabaseUrl || !supabaseAnonKey) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
     const body = await request.json();
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${accessToken}` } }
+    });
+    // Validar campos obrigatórios
+    if (!body?.name || typeof body.name !== 'string' || !body.name.trim()) {
+      return NextResponse.json({ error: 'Nome do profissional é obrigatório' }, { status: 400 });
+    }
 
     // Buscar usuário autenticado
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
     // Buscar dados do usuário para pegar o salon_id
-    const { data: userData } = await supabase
+    const { data: userData } = await supabaseService
       .from('users')
       .select('salon_id')
       .eq('id', user.id)
@@ -92,15 +104,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Salão não encontrado' }, { status: 404 });
     }
 
+    // Log para debug
+    console.log('Criando profissional:', {
+      salon_id: userData.salon_id,
+      name: body.name,
+      specialty: body.specialty,
+      phone: body.phone,
+      email: body.email,
+      photo_url: body.photo_url
+    });
+
     // Criar profissional
-    const { data: professional, error: professionalError } = await supabase
+    const { data: professional, error: professionalError } = await supabaseService
       .from('professionals')
       .insert({
         salon_id: userData.salon_id,
         name: body.name,
-        specialty: body.specialty,
-        phone: body.phone,
-        email: body.email,
+        specialty: body.specialty || null,
+        phone: body.phone || null,
+        email: body.email || null,
         photo_url: body.photo_url || null,
         is_active: true
       })
@@ -129,19 +151,29 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+  const supabaseService = getSupabaseAdmin();
+  if (!supabaseService || !supabaseUrl || !supabaseAnonKey) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
     const body = await request.json();
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${accessToken}` } }
+    });
+    // Validar campos obrigatórios
+    if (!body?.name || typeof body.name !== 'string' || !body.name.trim()) {
+      return NextResponse.json({ error: 'Nome do profissional é obrigatório' }, { status: 400 });
+    }
+    if (!body?.id) {
+      return NextResponse.json({ error: 'ID do profissional é obrigatório' }, { status: 400 });
+    }
 
     // Buscar usuário autenticado
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
     // Buscar dados do usuário para pegar o salon_id
-    const { data: userData } = await supabase
+    const { data: userData } = await supabaseService
       .from('users')
       .select('salon_id')
       .eq('id', user.id)
@@ -152,13 +184,13 @@ export async function PUT(request: NextRequest) {
     }
 
     // Atualizar profissional
-    const { data: professional, error: professionalError } = await supabase
+    const { data: professional, error: professionalError } = await supabaseService
       .from('professionals')
       .update({
         name: body.name,
-        specialty: body.specialty,
-        phone: body.phone,
-        email: body.email,
+        specialty: body.specialty || null,
+        phone: body.phone || null,
+        email: body.email || null,
         photo_url: body.photo_url || null
       })
       .eq('id', body.id)
@@ -188,8 +220,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+  const supabaseService = getSupabaseAdmin();
+  if (!supabaseService || !supabaseUrl || !supabaseAnonKey) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
     const { searchParams } = new URL(request.url);
     const professionalId = searchParams.get('id');
 
@@ -198,14 +230,17 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Buscar usuário autenticado
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${accessToken}` } }
+    });
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
     // Buscar dados do usuário para pegar o salon_id
-    const { data: userData } = await supabase
+    const { data: userData } = await supabaseService
       .from('users')
       .select('salon_id')
       .eq('id', user.id)
@@ -216,7 +251,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Excluir profissional
-    const { error: professionalError } = await supabase
+    const { error: professionalError } = await supabaseService
       .from('professionals')
       .delete()
       .eq('id', professionalId)
