@@ -123,15 +123,17 @@ export async function POST(request: NextRequest) {
       .from('salons')
       .select('id, plan_type, subscription_status')
       .eq('id', userData.salon_id)
-      .single();
+      .maybeSingle();
 
-    if (salonError) {
+    if (salonError && salonError.code !== 'PGRST116') {
       console.error('Erro ao buscar salão:', salonError);
       return NextResponse.json({ error: 'Erro ao buscar dados do salão' }, { status: 500 });
     }
 
     const currentPlan = (salonData?.plan_type || 'free').toLowerCase();
-    const subscriptionStatus = salonData?.subscription_status || 'inactive';
+    const subscriptionStatus = salonData && 'subscription_status' in salonData
+      ? (salonData.subscription_status as string | null) || 'inactive'
+      : 'inactive';
     const isPaidPlanActive = subscriptionStatus === 'active' && currentPlan !== 'free';
     const allowedProfessionals = isPaidPlanActive
       ? (MAX_PROFESSIONALS_BY_PLAN[currentPlan] ?? MAX_PROFESSIONALS_BY_PLAN.premium)
