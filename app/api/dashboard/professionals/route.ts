@@ -75,8 +75,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-  const supabaseService = getSupabaseAdmin();
-  if (!supabaseService || !supabaseUrl || !supabaseAnonKey) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+    const supabaseService = getSupabaseAdmin();
+    if (!supabaseService || !supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+    }
+
     const body = await request.json();
     const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -94,14 +97,68 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar dados do usuário para pegar o salon_id
-    const { data: userData } = await supabaseService
+    const { data: userData, error: userDataError } = await supabaseService
       .from('users')
       .select('salon_id')
       .eq('id', user.id)
       .single();
 
+    if (userDataError) {
+      console.error('Erro ao buscar usuário:', userDataError);
+      return NextResponse.json({ error: 'Erro ao buscar dados do usuário' }, { status: 500 });
+    }
+
     if (!userData?.salon_id) {
       return NextResponse.json({ error: 'Salão não encontrado' }, { status: 404 });
+    }
+
+    const MAX_PROFESSIONALS_BY_PLAN: Record<string, number> = {
+      free: 1,
+      basic: 3,
+      advanced: 6,
+      premium: 10
+    };
+
+    const { data: salonData, error: salonError } = await supabaseService
+      .from('salons')
+      .select('id, plan_type, subscription_status')
+      .eq('id', userData.salon_id)
+      .single();
+
+    if (salonError) {
+      console.error('Erro ao buscar salão:', salonError);
+      return NextResponse.json({ error: 'Erro ao buscar dados do salão' }, { status: 500 });
+    }
+
+    const currentPlan = (salonData?.plan_type || 'free').toLowerCase();
+    const subscriptionStatus = salonData?.subscription_status || 'inactive';
+    const isPaidPlanActive = subscriptionStatus === 'active' && currentPlan !== 'free';
+    const allowedProfessionals = isPaidPlanActive
+      ? (MAX_PROFESSIONALS_BY_PLAN[currentPlan] ?? MAX_PROFESSIONALS_BY_PLAN.premium)
+      : MAX_PROFESSIONALS_BY_PLAN.free;
+
+    const { count: professionalsCount, error: countError } = await supabaseService
+      .from('professionals')
+      .select('*', { count: 'exact', head: true })
+      .eq('salon_id', userData.salon_id);
+
+    if (countError) {
+      console.error('Erro ao contar profissionais:', countError);
+      return NextResponse.json({ error: 'Erro ao verificar limites do plano' }, { status: 500 });
+    }
+
+    const currentProfessionals = professionalsCount ?? 0;
+
+    if (currentProfessionals >= allowedProfessionals) {
+      return NextResponse.json(
+        {
+          error:
+            allowedProfessionals === 1
+              ? 'Plano Grátis permite apenas 1 profissional. Faça upgrade para adicionar mais.'
+              : 'Limite de profissionais do plano atual atingido.'
+        },
+        { status: 403 }
+      );
     }
 
     // Log para debug
