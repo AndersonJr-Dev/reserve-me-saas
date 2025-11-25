@@ -64,7 +64,8 @@ export default function ConfiguracoesPage() {
           email: settings.email,
           address: settings.address,
           workingHours: settings.workingHours
-        })
+        }),
+        credentials: 'include'
       });
 
       const json = await res.json();

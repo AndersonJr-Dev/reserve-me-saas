@@ -29,56 +29,24 @@ export default function Dashboard() {
     const loadDashboard = async () => {
       try {
         setLoading(true);
-        
-        // 1. Verifica autenticação
-        const { data } = await supabase.auth.getUser();
-        const user = data?.user;
+        // Buscar dados seguros via API (garante cookie e slug)
+        const meRes = await fetch('/api/auth/me', { credentials: 'include' });
+        if (!meRes.ok) {
+          setLoading(false);
+          return;
+        }
+        const meJson = await meRes.json();
+        const finalSalonId: string | null = meJson?.user?.salonId ?? null;
+        const finalSalonSlug: string | null = meJson?.user?.salonSlug ?? null;
 
-        if (!user) {
-          console.log("Usuário não autenticado.");
+        if (!finalSalonId) {
+          console.error('ERRO: Salão não encontrado para este usuário.');
           setLoading(false);
           return;
         }
 
-        // 2. Lógica para encontrar o ID do salão
-        let finalSalonId: string | null = null;
-
-        // Tentativa A: Tabela users
-        const { data: userSalon } = await supabase
-          .from('users')
-          .select('salon_id')
-          .eq('id', user.id)
-          .maybeSingle(); 
-
-        if (userSalon?.salon_id) {
-          finalSalonId = userSalon.salon_id;
-        } 
-        
-        // Tentativa B: Tabela salons (pelo owner_id)
-        if (!finalSalonId) {
-             const { data: salonByOwner } = await supabase
-                .from('salons')
-                .select('id')
-                .eq('owner_id', user.id)
-                .maybeSingle();
-             finalSalonId = salonByOwner?.id || null;
-        }
-
-        if (!finalSalonId) {
-            console.error("ERRO: Salão não encontrado para este usuário.");
-            setLoading(false);
-            return;
-        }
-
         setSalonId(finalSalonId);
-
-        // Buscar slug para link público
-        const { data: salonMeta } = await supabase
-          .from('salons')
-          .select('slug')
-          .eq('id', finalSalonId)
-          .maybeSingle();
-        setSalonSlug(salonMeta?.slug ?? null);
+        setSalonSlug(finalSalonSlug);
 
         // 3. Busca dados do banco em paralelo
         const [dashboardData, professionals] = await Promise.all([
@@ -282,12 +250,12 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-2">
             <div className="px-3 py-2 rounded-lg bg-gray-50 border text-gray-900 text-sm">
-              {`${process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '')}/agendar/${salonSlug ?? ''}`}
+              {salonSlug ? `/agendar/${salonSlug}` : 'Configurar URL do salão nas Configurações'}
             </div>
             <button
               onClick={() => {
-                const url = `${process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '')}/agendar/${salonSlug ?? ''}`;
-                navigator.clipboard.writeText(url);
+                const url = salonSlug ? `/agendar/${salonSlug}` : '';
+                if (url) navigator.clipboard.writeText(url);
               }}
               className="px-3 py-2 rounded-lg bg-orange-500 text-white text-sm hover:bg-orange-600"
             >

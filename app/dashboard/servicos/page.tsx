@@ -53,7 +53,7 @@ export default function ServicosPage() {
     const fetchServices = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/dashboard/services');
+        const response = await fetch('/api/dashboard/services', { credentials: 'include' });
         if (response.ok) {
           const data = await response.json();
           setServices(data.services || []);
@@ -91,7 +91,8 @@ export default function ServicosPage() {
         const response = await fetch('/api/dashboard/services', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingService.id, ...serviceData })
+          body: JSON.stringify({ id: editingService.id, ...serviceData }),
+          credentials: 'include'
         });
 
         if (response.ok) {
@@ -106,7 +107,8 @@ export default function ServicosPage() {
         const response = await fetch('/api/dashboard/services', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(serviceData)
+          body: JSON.stringify(serviceData),
+          credentials: 'include'
         });
 
         if (response.ok) {
@@ -143,7 +145,8 @@ export default function ServicosPage() {
 
     try {
       const response = await fetch(`/api/dashboard/services?id=${serviceId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       });
 
       if (response.ok) {

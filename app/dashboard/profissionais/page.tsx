@@ -45,12 +45,12 @@ export default function ProfissionaisPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const me = await fetch('/api/auth/me');
+        const me = await fetch('/api/auth/me', { credentials: 'include' });
         if (me.ok) {
           const body = await me.json();
           setUser(body.user || null);
         }
-        const resp = await fetch('/api/dashboard/professionals');
+        const resp = await fetch('/api/dashboard/professionals', { credentials: 'include' });
         if (resp.ok) {
           const json = await resp.json();
           setProfessionals(json.professionals || []);
@@ -101,7 +101,7 @@ export default function ProfissionaisPage() {
           form.append('file', selectedFile);
           form.append('path', fileName);
 
-          const uploadRes = await fetch('/api/storage/upload', { method: 'POST', body: form });
+          const uploadRes = await fetch('/api/storage/upload', { method: 'POST', body: form, credentials: 'include' });
           const json = await uploadRes.json().catch(() => ({}));
           if (!uploadRes.ok) {
             console.error('Upload falhou:', json);
@@ -128,7 +128,7 @@ export default function ProfissionaisPage() {
 
       const method = editingProfessional ? 'PUT' : 'POST';
       const body = editingProfessional ? JSON.stringify({ id: editingProfessional.id, ...payload }) : JSON.stringify(payload);
-      const res = await fetch('/api/dashboard/professionals', { method, headers: { 'Content-Type': 'application/json' }, body });
+      const res = await fetch('/api/dashboard/professionals', { method, headers: { 'Content-Type': 'application/json' }, body, credentials: 'include' });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         const msg = json?.error || 'Erro ao criar/atualizar profissional';
@@ -161,7 +161,7 @@ export default function ProfissionaisPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir profissional?')) return;
-    await fetch(`/api/dashboard/professionals?id=${id}`, { method: 'DELETE' });
+    await fetch(`/api/dashboard/professionals?id=${id}`, { method: 'DELETE', credentials: 'include' });
     setProfessionals((p) => p.filter(x => x.id !== id));
   };
 
