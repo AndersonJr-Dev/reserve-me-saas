@@ -10,6 +10,7 @@ interface AppointmentData {
   salonName: string;
   appointmentDate: string;
   appointmentTime: string;
+  planKey?: 'basic' | 'advanced' | 'premium';
 }
 
 export default function CheckoutPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
@@ -25,6 +26,8 @@ export default function CheckoutPage({ searchParams }: { searchParams: Record<st
     const title = Array.isArray(searchParams.title) ? searchParams.title[0] : (searchParams.title as string | undefined) || `Plano ${planParam}`;
     const price = parseFloat(priceRaw || '0') || 0;
 
+    const normalizedPlanKey = planParam === 'basic' || planParam === 'advanced' || planParam === 'premium' ? planParam : undefined;
+
     const appointmentData: AppointmentData = {
       id: `plan-${planParam}`,
       serviceName: title,
@@ -34,7 +37,8 @@ export default function CheckoutPage({ searchParams }: { searchParams: Record<st
       customerEmail: '',
       salonName: title,
       appointmentDate: '',
-      appointmentTime: ''
+      appointmentTime: '',
+      planKey: normalizedPlanKey
     };
 
     return <CheckoutClient initialData={appointmentData} />;
@@ -56,4 +60,5 @@ export default function CheckoutPage({ searchParams }: { searchParams: Record<st
   // Renderiza o componente cliente passando os dados iniciais
   return <CheckoutClient initialData={appointmentData} />;
 }
+
 

@@ -6,36 +6,51 @@ import { CheckCircle, ArrowRight } from 'lucide-react';
 
 interface Props {
   initial: {
-    paymentId: string | null;
-    externalReference: string | null;
+    sessionId: string | null;
   };
 }
 
-type PaymentData = {
-  id?: string;
-  transactionAmount?: number;
+type SessionData = {
+  id: string;
+  amountTotal: number | null;
+  currency: string | null;
+  paymentStatus: string;
+  metadata?: Record<string, string>;
 } | null;
 
+const formatCurrency = (amount?: number | null, currency?: string | null) => {
+  if (!amount || !currency) return null;
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: currency.toUpperCase()
+  }).format(amount / 100);
+};
+
 export default function SuccessClient({ initial }: Props) {
-  const { paymentId } = initial;
-  const [paymentData, setPaymentData] = useState<PaymentData>(null);
-  // initialize loading to true only if we have a paymentId to fetch
-  const [loading, setLoading] = useState<boolean>(!!paymentId);
+  const { sessionId } = initial;
+  const [paymentData, setPaymentData] = useState<SessionData>(null);
+  const [loading, setLoading] = useState<boolean>(!!sessionId);
 
   useEffect(() => {
-    if (!paymentId) return; // nothing to do
+    if (!sessionId) return;
 
-    fetch(`/api/payment/create?payment_id=${paymentId}`)
+    fetch(`/api/payment/create?session_id=${sessionId}`)
       .then(response => response.json())
       .then(data => {
-        setPaymentData(data);
+        setPaymentData({
+          id: data.id,
+          amountTotal: data.amountTotal ?? null,
+          currency: data.currency ?? 'brl',
+          paymentStatus: data.paymentStatus ?? 'unknown',
+          metadata: data.metadata
+        });
         setLoading(false);
       })
       .catch(error => {
         console.error('Erro ao buscar dados do pagamento:', error);
         setLoading(false);
       });
-  }, [paymentId]);
+  }, [sessionId]);
 
   if (loading) {
     return (
@@ -55,6 +70,14 @@ export default function SuccessClient({ initial }: Props) {
           
           <p className="text-gray-600 mb-8">Seu agendamento foi confirmado com sucesso. Você receberá um email de confirmação em breve.</p>
 
+          {!sessionId && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-left">
+              <p className="text-sm text-yellow-800">
+                Não encontramos o identificador da sessão do Stripe. Caso tenha concluído o pagamento, entre em contato com o suporte para validar.
+              </p>
+            </div>
+          )}
+
           {paymentData && (
             <div className="bg-gray-50 rounded-lg p-6 mb-8 text-left">
               <h3 className="font-semibold text-gray-900 mb-4">Detalhes do Pagamento</h3>
@@ -65,12 +88,22 @@ export default function SuccessClient({ initial }: Props) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Valor:</span>
-                  <span className="font-semibold">R$ {paymentData.transactionAmount?.toFixed(2)}</span>
+                  <span className="font-semibold">
+                    {formatCurrency(paymentData.amountTotal, paymentData.currency) ?? '—'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Status:</span>
-                  <span className="text-green-600 font-semibold">Aprovado</span>
+                  <span className="text-green-600 font-semibold">
+                    {paymentData.paymentStatus === 'paid' ? 'Aprovado' : paymentData.paymentStatus}
+                  </span>
                 </div>
+                {paymentData.metadata?.serviceName && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Serviço:</span>
+                    <span className="font-semibold">{paymentData.metadata.serviceName}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}

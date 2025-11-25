@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { ArrowLeft, CreditCard, Smartphone, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, CreditCard, CheckCircle, XCircle } from 'lucide-react';
 
 interface AppointmentData {
   id: string;
@@ -15,6 +14,7 @@ interface AppointmentData {
   salonName: string;
   appointmentDate: string;
   appointmentTime: string;
+  planKey?: 'basic' | 'advanced' | 'premium';
 }
 
 interface Props {
@@ -25,15 +25,25 @@ export default function CheckoutClient({ initialData }: Props) {
   const [appointmentData] = useState<AppointmentData | null>(initialData || null);
   const [loading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
-  const [pixLoading, setPixLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pixResult, setPixResult] = useState<{ qrCode?: string; qrCodeBase64?: string; ticketUrl?: string } | null>(null);
+
+  const resolvePlanKey = () => {
+    if (!appointmentData) return null;
+    if (appointmentData.planKey) return appointmentData.planKey;
+    const [, planKey] = appointmentData.id.split('plan-');
+    if (appointmentData.id.startsWith('plan-') && (planKey === 'basic' || planKey === 'advanced' || planKey === 'premium')) {
+      return planKey;
+    }
+    return null;
+  };
 
   const handlePaymentCard = async () => {
     if (!appointmentData) return;
 
     setPaymentLoading(true);
     setError(null);
+
+    const planKey = resolvePlanKey();
 
     try {
       const response = await fetch('/api/payment/create', {
@@ -49,21 +59,14 @@ export default function CheckoutClient({ initialData }: Props) {
           customerName: appointmentData.customerName,
           customerEmail: appointmentData.customerEmail,
           salonName: appointmentData.salonName,
-          paymentMethod: 'card'
+          planKey
         })
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        // Redirecionar para o Mercado Pago
-        if (data.initPoint) {
-          window.location.href = data.initPoint;
-        } else if (data.url) {
-          window.location.href = data.url;
-        } else {
-          setError('Resposta inválida do servidor de pagamento');
-        }
+      if (response.ok && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
       } else {
         setError(data.error || 'Erro ao processar pagamento');
       }
@@ -72,46 +75,6 @@ export default function CheckoutClient({ initialData }: Props) {
       setError('Erro ao processar pagamento');
     } finally {
       setPaymentLoading(false);
-    }
-  };
-
-  const handlePaymentPix = async () => {
-    if (!appointmentData) return;
-
-    setPixLoading(true);
-    setError(null);
-    setPixResult(null);
-
-    try {
-      const response = await fetch('/api/payment/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          appointmentId: appointmentData.id,
-          serviceName: appointmentData.serviceName,
-          professionalName: appointmentData.professionalName,
-          price: appointmentData.price,
-          customerName: appointmentData.customerName,
-          customerEmail: appointmentData.customerEmail,
-          salonName: appointmentData.salonName,
-          paymentMethod: 'pix'
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setPixResult({ qrCode: data.qrCode, qrCodeBase64: data.qrCodeBase64, ticketUrl: data.ticketUrl });
-      } else {
-        setError(data.error || 'Erro ao gerar PIX');
-      }
-    } catch (error) {
-      console.error('Erro:', error);
-      setError('Erro ao gerar PIX');
-    } finally {
-      setPixLoading(false);
     }
   };
 
@@ -214,28 +177,18 @@ export default function CheckoutClient({ initialData }: Props) {
             )}
 
             <div className="space-y-4">
-              <div className="border border-gray-200 rounded-lg p-4 hover:border-orange-500 transition-colors cursor-pointer">
+              <div className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center">
                   <CreditCard className="w-6 h-6 text-gray-600 mr-3" />
                   <div>
-                    <h3 className="font-semibold text-gray-900">Cartão de Crédito/Débito</h3>
-                    <p className="text-sm text-gray-600">Visa, Mastercard, Elo</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border border-gray-200 rounded-lg p-4 hover:border-orange-500 transition-colors cursor-pointer">
-                <div className="flex items-center">
-                  <Smartphone className="w-6 h-6 text-gray-600 mr-3" />
-                  <div>
-                    <h3 className="font-semibold text-gray-900">PIX</h3>
-                    <p className="text-sm text-gray-600">Pagamento instantâneo</p>
+                    <h3 className="font-semibold text-gray-900">Checkout seguro Stripe</h3>
+                    <p className="text-sm text-gray-600">Cartão de crédito ou débito</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-8">
+            <div className="mt-8">
               <button
                 onClick={handlePaymentCard}
                 disabled={paymentLoading}
@@ -247,50 +200,14 @@ export default function CheckoutClient({ initialData }: Props) {
                     Processando...
                   </>
                 ) : (
-                  'Pagar com Cartão'
-                )}
-              </button>
-
-              <button
-                onClick={handlePaymentPix}
-                disabled={pixLoading}
-                className="w-full bg-green-600 text-white py-4 rounded-lg hover:bg-green-700 transition-colors font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                {pixLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Gerando QR...
-                  </>
-                ) : (
-                  'Pagar com PIX'
+                  'Pagar agora'
                 )}
               </button>
             </div>
 
-            {pixResult && (pixResult.qrCodeBase64 || pixResult.ticketUrl) && (
-              <div className="mt-6 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 mb-3">QR Code PIX</h4>
-                {pixResult.qrCodeBase64 ? (
-                  <Image 
-                    src={`data:image/png;base64,${pixResult.qrCodeBase64}`} 
-                    alt="QR PIX" 
-                    width={192}
-                    height={192}
-                    className="mx-auto" 
-                  />
-                ) : null}
-                {pixResult.ticketUrl ? (
-                  <a href={pixResult.ticketUrl} target="_blank" rel="noopener noreferrer" className="block text-center mt-3 text-orange-600 hover:underline">Abrir link do PIX</a>
-                ) : null}
-                {pixResult.qrCode ? (
-                  <p className="mt-2 text-xs text-gray-500 break-all">Copia e Cola: {pixResult.qrCode}</p>
-                ) : null}
-              </div>
-            )}
-
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                Pagamento seguro processado pelo Mercado Pago
+                Pagamento seguro processado pelo Stripe
               </p>
               <div className="flex items-center justify-center mt-2 space-x-4 text-xs text-gray-500">
                 <span className="flex items-center">

@@ -5,12 +5,12 @@ import { Clock, ArrowLeft } from 'lucide-react';
 
 interface Props {
   initial: {
-    paymentId: string | null;
+    sessionId: string | null;
   };
 }
 
 export default function PendingClient({ initial }: Props) {
-  const { paymentId } = initial;
+  const { sessionId } = initial;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -23,10 +23,11 @@ export default function PendingClient({ initial }: Props) {
           <p className="text-gray-600 mb-4">Seu pagamento está sendo processado. Isso pode levar alguns minutos.</p>
 
           <p className="text-sm text-gray-500 mb-8">Você receberá uma confirmação por email assim que o pagamento for aprovado.</p>
+          <p className="text-xs text-gray-500 mb-8">Processado com segurança pelo Stripe.</p>
 
-          {paymentId && (
+          {sessionId && (
             <div className="bg-gray-50 rounded-lg p-4 mb-8">
-              <p className="text-sm text-gray-600"><span className="font-semibold">ID do Pagamento:</span> {paymentId}</p>
+              <p className="text-sm text-gray-600"><span className="font-semibold">Sessão:</span> {sessionId}</p>
             </div>
           )}
 

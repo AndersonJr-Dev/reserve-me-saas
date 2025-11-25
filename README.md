@@ -8,29 +8,37 @@ A ideia nasceu quando percebi que muitos profissionais do ramo de beleza e barbe
 
 O sistema é simples, direto ao ponto e focado em resolver o problema real: fazer os clientes agendarem sozinhos, 24 horas por dia, enquanto você cuida do que realmente importa.
 
-## Configuração do Mercado Pago
+## Configuração do Stripe
 
-### 1. Criar Conta no Mercado Pago
-- Acesse [mercadopago.com.br](https://mercadopago.com.br)
-- Crie uma conta de desenvolvedor
-- Acesse suas credenciais na seção "Suas integrações"
+### 1. Criar conta e produtos
+- Crie uma conta no [Stripe](https://dashboard.stripe.com/register)
+- Cadastre os três planos de assinatura e copie os IDs de preço (price_xxx)
+- Opcional: configure produtos únicos para serviços avulsos
 
-### 2. Configurar Variáveis de Ambiente
-Adicione no arquivo `.env.local`:
+### 2. Variáveis de ambiente
+Atualize `.env.local` com:
 
 ```env
-# Mercado Pago
-MERCADOPAGO_ACCESS_TOKEN=APP_USR-3624930204910165-102611-c89ff9d10d57094a4a97fff725d4caf0-433618265
-MERCADOPAGO_PUBLIC_KEY=APP_USR-5bca32b9-8570-4a01-8085-b5a384f8720c
-NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY=APP_USR-5bca32b9-8570-4a01-8085-b5a384f8720c
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test...
+STRIPE_SECRET_KEY=sk_test...
+STRIPE_WEBHOOK_SECRET=whsec...
+STRIPE_PRICE_BASIC=price_...
+STRIPE_PRICE_ADVANCED=price_...
+STRIPE_PRICE_PREMIUM=price_...
 NEXT_PUBLIC_BASE_URL=https://seu-dominio.com
 ```
 
-### 3. Configurar Webhook
-No painel do Mercado Pago:
-- Acesse "Webhooks" nas configurações
-- Adicione a URL: `https://seu-dominio.com/api/payment/webhook`
-- Selecione os eventos: `payment`
+### 3. Webhook
+No Stripe:
+- Em **Developers > Webhooks**, crie um endpoint para `https://seu-dominio.com/api/payment/webhook`
+- Selecione os eventos `checkout.session.completed`, `checkout.session.async_payment_succeeded` e `checkout.session.async_payment_failed`
+- Copie o `Signing secret (whsec_xxx)` e coloque em `STRIPE_WEBHOOK_SECRET`
+
+Em desenvolvimento, use:
+
+```bash
+stripe listen --forward-to http://localhost:3000/api/payment/webhook
+```
 
 ### 4. Atualizar Banco de Dados
 Execute o SQL no Supabase:
@@ -48,16 +56,15 @@ ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
 ## Como Usar o Sistema de Pagamento
 
 ### Para Clientes:
-1. Cliente agenda um serviço
-2. É redirecionado para página de pagamento
-3. Escolhe entre cartão ou PIX
-4. Completa o pagamento no Mercado Pago
-5. Recebe confirmação por email
+1. Cliente agenda um serviço ou escolhe um plano
+2. É redirecionado para o Stripe Checkout
+3. Finaliza com cartão de crédito/débito ou carteiras digitais
+4. Recebe confirmação automática por email
 
 ### Para Estabelecimentos:
-1. Recebem notificação de pagamento aprovado
-2. Podem ver status dos pagamentos no dashboard
-3. Relatórios de faturamento automáticos
+1. Recebem o status atualizado no dashboard
+2. Supabase registra o ID do pagamento e o status
+3. Relatórios de faturamento usam os dados do Stripe
 
 ## Funcionalidades Principais
 

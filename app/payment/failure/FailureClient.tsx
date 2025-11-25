@@ -11,23 +11,31 @@ interface Props {
 }
 
 export default function FailureClient({ initial }: Props) {
-  const { statusDetail } = initial;
+  const { status, statusDetail } = initial;
 
   const getErrorMessage = () => {
-    switch (statusDetail) {
-      case 'cc_rejected_insufficient_amount':
-        return 'Saldo insuficiente no cartão';
-      case 'cc_rejected_bad_filled_card_number':
-        return 'Número do cartão inválido';
-      case 'cc_rejected_bad_filled_date':
-        return 'Data de validade inválida';
-      case 'cc_rejected_bad_filled_security_code':
-        return 'Código de segurança inválido';
-      case 'cc_rejected_other_reason':
-        return 'Cartão rejeitado pelo banco';
-      default:
-        return 'Pagamento não foi aprovado';
+    if (status === 'expired') {
+      return 'Sessão expirada. Gere um novo link de pagamento.';
     }
+
+    if (status === 'cancelled') {
+      return 'O checkout foi cancelado antes de concluir o pagamento.';
+    }
+
+    if (statusDetail) {
+      switch (statusDetail) {
+        case 'card_declined':
+          return 'Cartão recusado pelo emissor.';
+        case 'incorrect_cvc':
+          return 'Código de segurança inválido.';
+        case 'expired_card':
+          return 'Cartão expirado.';
+        default:
+          return 'Pagamento não foi aprovado.';
+      }
+    }
+
+    return 'Pagamento não foi aprovado.';
   };
 
   return (

@@ -1,118 +1,118 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type Stripe from 'stripe';
 
-function getMercadoPagoPayment(): Payment {
-  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-  if (!accessToken) throw new Error('MERCADOPAGO_ACCESS_TOKEN is not defined');
+import { getStripeClient } from '@/lib/stripe/server';
 
-  const client = new MercadoPagoConfig({
-    accessToken,
-    options: {
-      timeout: 5000,
-      idempotencyKey: 'abc'
-    }
-  });
-
-  return new Payment(client);
-}
-
-function getSupabaseAdmin(): SupabaseClient {
+const getSupabaseAdmin = (): SupabaseClient => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Supabase admin credentials are not set (NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)');
+    throw new Error('Credenciais do Supabase não configuradas.');
   }
 
   return createClient(supabaseUrl, supabaseServiceKey);
-}
+};
 
-// POST /api/payment/webhook - Receber notificações do Mercado Pago
+const updateAppointmentStatus = async ({
+  appointmentId,
+  paymentId,
+  paymentStatus,
+  amount
+}: {
+  appointmentId: string;
+  paymentId: string;
+  paymentStatus: Stripe.Checkout.Session.PaymentStatus;
+  amount: number | null;
+}) => {
+  const statusMap: Record<Stripe.Checkout.Session.PaymentStatus, string> = {
+    paid: 'confirmed',
+    unpaid: 'pending',
+    no_payment_required: 'confirmed'
+  };
+
+  const appointmentStatus = statusMap[paymentStatus] ?? 'pending';
+
+  const { error } = await getSupabaseAdmin()
+    .from('appointments')
+    .update({
+      status: appointmentStatus,
+      payment_id: paymentId,
+      payment_status: paymentStatus,
+      payment_amount: amount,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', appointmentId);
+
+  if (error) {
+    throw error;
+  }
+};
+
 export async function POST(request: NextRequest) {
+  const stripe = getStripeClient();
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    console.error('STRIPE_WEBHOOK_SECRET não configurado.');
+    return NextResponse.json({ error: 'Configuração ausente' }, { status: 500 });
+  }
+
+  const signature = request.headers.get('stripe-signature');
+  if (!signature) {
+    return NextResponse.json({ error: 'Assinatura não fornecida' }, { status: 400 });
+  }
+
+  const payload = await request.text();
+
+  let event: Stripe.Event;
+
   try {
-    const body = await request.json();
-    const { type, data } = body;
+    event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+  } catch (err) {
+    console.error('Falha na verificação do webhook Stripe:', err);
+    return NextResponse.json({ error: 'Assinatura inválida' }, { status: 400 });
+  }
 
-    console.log('Webhook recebido:', { type, data });
+  try {
+    if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const metadata = session.metadata ?? {};
 
-    if (type === 'payment') {
-      const paymentId = data.id;
-      
-  // Buscar detalhes do pagamento
-  const paymentDetails = await getMercadoPagoPayment().get({ id: paymentId });
-      
-      console.log('Detalhes do pagamento:', {
-        id: paymentDetails.id,
-        status: paymentDetails.status,
-        external_reference: paymentDetails.external_reference,
-        transaction_amount: paymentDetails.transaction_amount
-      });
-
-      const appointmentId = paymentDetails.external_reference;
-      
-      if (!appointmentId) {
-        console.error('External reference não encontrado');
-        return NextResponse.json({ error: 'External reference não encontrado' }, { status: 400 });
-      }
-
-      // Atualizar status do agendamento baseado no status do pagamento
-      let appointmentStatus = 'pending';
-      
-      switch (paymentDetails.status) {
-        case 'approved':
-          appointmentStatus = 'confirmed';
-          break;
-        case 'rejected':
-        case 'cancelled':
-          appointmentStatus = 'cancelled';
-          break;
-        case 'pending':
-          appointmentStatus = 'pending';
-          break;
-        default:
-          appointmentStatus = 'pending';
-      }
-
-      // Atualizar agendamento no banco de dados
-      const { error: updateError } = await getSupabaseAdmin()
-        .from('appointments')
-        .update({
-          status: appointmentStatus,
-          payment_id: paymentId,
-          payment_status: paymentDetails.status,
-          payment_amount: paymentDetails.transaction_amount,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', appointmentId);
-
-      if (updateError) {
-        console.error('Erro ao atualizar agendamento:', updateError);
-        return NextResponse.json({ error: 'Erro ao atualizar agendamento' }, { status: 500 });
-      }
-
-      console.log(`Agendamento ${appointmentId} atualizado para status: ${appointmentStatus}`);
-
-      // Se o pagamento foi aprovado, enviar confirmação por email/WhatsApp
-      if (paymentDetails.status === 'approved') {
-        // Aqui você pode adicionar lógica para enviar email/WhatsApp
-        console.log(`Pagamento aprovado para agendamento ${appointmentId}`);
+      if (metadata.appointmentId) {
+        await updateAppointmentStatus({
+          appointmentId: metadata.appointmentId,
+          paymentId: session.payment_intent ? String(session.payment_intent) : session.id,
+          paymentStatus: session.payment_status,
+          amount: session.amount_total
+        });
+        console.log(`Agendamento ${metadata.appointmentId} atualizado para ${session.payment_status}`);
       }
     }
 
-    return NextResponse.json({ success: true });
+    if (event.type === 'checkout.session.async_payment_failed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const metadata = session.metadata ?? {};
+      if (metadata.appointmentId) {
+        await updateAppointmentStatus({
+          appointmentId: metadata.appointmentId,
+          paymentId: session.payment_intent ? String(session.payment_intent) : session.id,
+          paymentStatus: 'unpaid',
+          amount: session.amount_total
+        });
+        console.warn(`Pagamento falhou para agendamento ${metadata.appointmentId}`);
+      }
+    }
 
+    return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('Erro no webhook:', error);
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    );
+    console.error('Erro ao processar webhook Stripe:', error);
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
   }
 }
 
-// GET /api/payment/webhook - Para verificação do webhook
 export async function GET() {
-  return NextResponse.json({ message: 'Webhook endpoint ativo' });
+  return NextResponse.json({ message: 'Stripe webhook ativo' });
 }
 

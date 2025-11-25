@@ -1,167 +1,177 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MercadoPagoConfig, Payment, Preference } from 'mercadopago';
+import type Stripe from 'stripe';
 
-function getMercadoPago() {
-  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-  if (!accessToken) return null;
-  const client = new MercadoPagoConfig({
-    accessToken,
-    options: { timeout: 5000, idempotencyKey: 'abc' }
+import { getPlanPriceId, getStripeClient } from '@/lib/stripe/server';
+
+type PlanKey = 'basic' | 'advanced' | 'premium';
+
+type CheckoutPayload = {
+  appointmentId?: string;
+  serviceName?: string;
+  professionalName?: string;
+  price?: number | string;
+  customerName?: string;
+  customerEmail?: string;
+  salonName?: string;
+  planKey?: PlanKey;
+  successPath?: string;
+  cancelPath?: string;
+};
+
+const REQUIRED_APPOINTMENT_FIELDS: Array<keyof Required<CheckoutPayload>> = [
+  'appointmentId',
+  'serviceName',
+  'professionalName',
+  'price',
+  'customerName'
+];
+
+const normalizeNumber = (value?: number | string): number | null => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
+const buildRedirectUrl = (origin: string, path?: string) => {
+  if (!path) return origin;
+  if (path.startsWith('http')) return path;
+  const formattedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${origin}${formattedPath}`;
+};
+
+const validateAppointmentPayload = (payload: CheckoutPayload): string | null => {
+  const missingField = REQUIRED_APPOINTMENT_FIELDS.find((field) => !payload[field]);
+  if (missingField) {
+    return `Campo obrigatório ausente: ${missingField}`;
+  }
+
+  const normalizedPrice = normalizeNumber(payload.price);
+  if (!normalizedPrice || normalizedPrice <= 0) {
+    return 'Preço inválido';
+  }
+
+  return null;
+};
+
+const formatMetadata = (payload: CheckoutPayload) => ({
+  appointmentId: payload.appointmentId ?? '',
+  serviceName: payload.serviceName ?? '',
+  professionalName: payload.professionalName ?? '',
+  customerName: payload.customerName ?? '',
+  salonName: payload.salonName ?? '',
+  purchaseType: payload.planKey ? `plan-${payload.planKey}` : 'appointment'
+});
+
+const withSessionResponse = (session: Stripe.Checkout.Session) =>
+  NextResponse.json({
+    sessionId: session.id,
+    checkoutUrl: session.url
   });
-  return {
-    payment: new Payment(client),
-    preference: new Preference(client)
-  };
-}
 
-// POST /api/payment/create - Criar preferência de pagamento
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { 
-      appointmentId, 
-      serviceName, 
-      professionalName, 
-      price, 
-      customerName, 
-      customerEmail,
-      salonName 
-    } = body;
-    const paymentMethod = (body?.paymentMethod as string | undefined) || 'card';
-
-    if (!appointmentId || !serviceName || !price || !customerName) {
-      return NextResponse.json(
-        { error: 'Dados obrigatórios não fornecidos' },
-        { status: 400 }
-      );
-    }
-
-    const mp = getMercadoPago();
-    if (!mp) {
-      console.error('MERCADOPAGO_ACCESS_TOKEN is not set');
-      return NextResponse.json({ error: 'Configuração do servidor de pagamento ausente' }, { status: 500 });
-    }
-
-    // Base URL dinâmica (fallback para o origin da requisição)
+    const payload = (await request.json()) as CheckoutPayload;
     const origin = process.env.NEXT_PUBLIC_BASE_URL || new URL(request.url).origin;
+    const successUrl = `${buildRedirectUrl(origin, payload.successPath || '/payment/success')}?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${buildRedirectUrl(origin, payload.cancelPath || '/payment/failure')}?session_id={CHECKOUT_SESSION_ID}&status=cancelled`;
 
-    // Suporte a dois fluxos: cartão (Preference) e PIX (Payment)
-    if (paymentMethod === 'pix') {
-      const paymentData = {
-        transaction_amount: typeof price === 'string' ? parseFloat(price) : Number(price),
-        description: `${serviceName} - ${professionalName}`,
-        payment_method_id: 'pix',
-        payer: {
-          email: customerEmail || 'cliente@exemplo.com',
-          first_name: customerName
-        },
-        external_reference: appointmentId,
-        notification_url: `${origin}/api/payment/webhook`,
-        metadata: {
-          appointment_id: appointmentId,
-          salon_name: salonName,
-          professional_name: professionalName,
-          service_name: serviceName
-        }
-      };
+    const stripe = getStripeClient();
 
-      const result = await mp.payment.create({ body: paymentData });
+    if (payload.planKey) {
+      const planKey = payload.planKey;
+      if (!['basic', 'advanced', 'premium'].includes(planKey)) {
+        return NextResponse.json({ error: 'Plano inválido' }, { status: 400 });
+      }
 
-      // Dados do PIX (QR e link)
-      const poi = result?.point_of_interaction?.transaction_data || {};
-      return NextResponse.json({
-        paymentId: result.id,
-        status: result.status,
-        qrCode: poi.qr_code,
-        qrCodeBase64: poi.qr_code_base64,
-        ticketUrl: poi.ticket_url
-      });
-    } else {
-      // Criar preferência de pagamento (cartão/checkout)
-      const preferenceData = {
-        items: [
+      const session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        customer_email: payload.customerEmail,
+        payment_method_types: ['card'],
+        line_items: [
           {
-            id: appointmentId,
-            title: `${serviceName} - ${professionalName}`,
-            description: `Agendamento com ${professionalName} na ${salonName}`,
-            quantity: 1,
-            unit_price: typeof price === 'string' ? parseFloat(price) : Number(price),
-            currency_id: 'BRL'
+            price: getPlanPriceId(planKey),
+            quantity: 1
           }
         ],
-        payer: {
-          name: customerName,
-          email: customerEmail || undefined
-        },
-        back_urls: {
-          success: `${origin}/payment/success`,
-          failure: `${origin}/payment/failure`,
-          pending: `${origin}/payment/pending`
-        },
-        auto_return: 'approved',
-        notification_url: `${origin}/api/payment/webhook`,
-        external_reference: appointmentId,
         metadata: {
-          appointment_id: appointmentId,
-          salon_name: salonName,
-          professional_name: professionalName,
-          service_name: serviceName
-        }
-      };
-
-      const result = await mp.preference.create({ body: preferenceData });
-
-      return NextResponse.json({
-        preferenceId: result.id,
-        initPoint: result.init_point,
-        sandboxInitPoint: result.sandbox_init_point
+          ...formatMetadata(payload),
+          planKey
+        },
+        success_url: successUrl,
+        cancel_url: cancelUrl
       });
+
+      return withSessionResponse(session);
     }
 
+    const validationError = validateAppointmentPayload(payload);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
+    }
+
+    const normalizedPrice = normalizeNumber(payload.price) as number;
+    const unitAmount = Math.round(normalizedPrice * 100);
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      customer_email: payload.customerEmail,
+      payment_method_types: ['card'],
+      allow_promotion_codes: true,
+      line_items: [
+        {
+          price_data: {
+            currency: 'brl',
+            unit_amount: unitAmount,
+            product_data: {
+              name: `${payload.serviceName} - ${payload.professionalName}`,
+              description: payload.salonName ? `Serviço em ${payload.salonName}` : undefined
+            }
+          },
+          quantity: 1
+        }
+      ],
+      metadata: formatMetadata(payload),
+      success_url: successUrl,
+      cancel_url: cancelUrl
+    });
+
+    return withSessionResponse(session);
   } catch (error) {
-    console.error('Erro ao criar preferência de pagamento:', error);
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    );
+    console.error('Erro ao criar sessão do Stripe:', error);
+    return NextResponse.json({ error: 'Erro ao iniciar o checkout' }, { status: 500 });
   }
 }
 
-// GET /api/payment/create - Verificar status de pagamento
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const paymentId = searchParams.get('payment_id');
+    const sessionId = searchParams.get('session_id');
 
-    if (!paymentId) {
-      return NextResponse.json(
-        { error: 'ID do pagamento não fornecido' },
-        { status: 400 }
-      );
+    if (!sessionId) {
+      return NextResponse.json({ error: 'session_id não informado' }, { status: 400 });
     }
 
-    const mp = getMercadoPago();
-    if (!mp) {
-      console.error('MERCADOPAGO_ACCESS_TOKEN is not set');
-      return NextResponse.json({ error: 'Configuração do servidor de pagamento ausente' }, { status: 500 });
-    }
-
-    const result = await mp.payment.get({ id: paymentId });
-
-    return NextResponse.json({
-      id: result.id,
-      status: result.status,
-      statusDetail: result.status_detail,
-      transactionAmount: result.transaction_amount,
-      externalReference: result.external_reference
+    const stripe = getStripeClient();
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['payment_intent', 'subscription']
     });
 
+    return NextResponse.json({
+      id: session.id,
+      amountTotal: session.amount_total,
+      currency: session.currency,
+      paymentStatus: session.payment_status,
+      metadata: session.metadata,
+      customerEmail: session.customer_details?.email ?? session.customer_email ?? null,
+      paymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id ?? null,
+      subscriptionId: typeof session.subscription === 'string' ? session.subscription : session.subscription?.id ?? null
+    });
   } catch (error) {
-    console.error('Erro ao verificar pagamento:', error);
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    );
+    console.error('Erro ao consultar sessão do Stripe:', error);
+    return NextResponse.json({ error: 'Erro ao consultar pagamento' }, { status: 500 });
   }
 }
 

@@ -45,10 +45,9 @@ export default function PaymentButton({ appointmentData, onPaymentSuccess }: Pay
 
       const data = await response.json();
 
-      if (response.ok) {
-        // Notificar sucesso e redirecionar para o Mercado Pago
+      if (response.ok && data.checkoutUrl) {
         onPaymentSuccess?.();
-        window.location.href = data.initPoint;
+        window.location.href = data.checkoutUrl;
       } else {
         setError(data.error || 'Erro ao processar pagamento');
       }
@@ -97,8 +96,8 @@ export default function PaymentButton({ appointmentData, onPaymentSuccess }: Pay
         <div className="flex items-center p-3 border border-gray-200 rounded-lg">
           <Smartphone className="w-5 h-5 text-gray-600 mr-3" />
           <div className="flex-1">
-            <div className="font-medium text-gray-900">PIX</div>
-            <div className="text-sm text-gray-600">Pagamento instantâneo</div>
+            <div className="font-medium text-gray-900">Carteiras Digitais</div>
+            <div className="text-sm text-gray-600">Apple Pay e Google Pay via Stripe</div>
           </div>
         </div>
       </div>
@@ -116,7 +115,7 @@ export default function PaymentButton({ appointmentData, onPaymentSuccess }: Pay
         ) : (
           <>
             <CreditCard className="w-5 h-5 mr-2" />
-            Pagar com Mercado Pago
+            Pagar com Stripe
           </>
         )}
       </button>
@@ -133,10 +132,11 @@ export default function PaymentButton({ appointmentData, onPaymentSuccess }: Pay
           </span>
         </div>
         <p className="text-xs text-gray-500 mt-2">
-          Pagamento processado pelo Mercado Pago
+          Pagamento seguro processado pelo Stripe
         </p>
       </div>
     </div>
   );
 }
+
 
