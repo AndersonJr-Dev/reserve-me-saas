@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Calendar, Users, CheckCircle, BarChart3, Clock, Settings, PlusCircle, ArrowRight } from 'lucide-react';
-import PlanSubscribeButton from '../components/plan-subscribe-button';
 
 // CORREÇÃO DE IMPORTAÇÃO (ESTRUTURA: app/dashboard -> src/lib):
 // ../.. volta para a raiz do projeto
@@ -141,10 +140,6 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <Link href="/agendar/[slug]" as={salonSlug ? `/agendar/${salonSlug}` : '/agendar/demo'} className="hidden md:inline-flex items-center text-sm text-orange-600 hover:text-orange-700 font-semibold">
-            Ver página de agendamento
-            <ArrowRight className="w-4 h-4 ml-1" />
-          </Link>
         </div>
       
         {/* Cards de Estatísticas */}
@@ -223,11 +218,10 @@ export default function Dashboard() {
 
             <div className="bg-white p-6 rounded-xl shadow-sm border">
               <h2 className="text-lg font-bold text-gray-900 mb-4">Upgrade de Plano</h2>
-              <div className="grid grid-cols-1 gap-3">
-                <PlanSubscribeButton planKey="basic" label="Assinar Básico" buttonClassName="bg-orange-500 text-white py-3" />
-                <PlanSubscribeButton planKey="advanced" label="Assinar Avançado" buttonClassName="bg-orange-500 text-white py-3" />
-                <PlanSubscribeButton planKey="premium" label="Assinar Premium" buttonClassName="bg-orange-500 text-white py-3" />
-              </div>
+              <Link href="/#planos" className="w-full inline-flex items-center justify-center bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors font-semibold">
+                Ver Planos
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
             </div>
           </div>
 
@@ -276,6 +270,29 @@ export default function Dashboard() {
                 })}
               </div>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Barra inferior com link público de agendamento */}
+      <div className="border-t bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="text-sm text-gray-700">
+            Link público para seus clientes:
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="px-3 py-2 rounded-lg bg-gray-50 border text-gray-900 text-sm">
+              {`${process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '')}/agendar/${salonSlug ?? ''}`}
+            </div>
+            <button
+              onClick={() => {
+                const url = `${process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '')}/agendar/${salonSlug ?? ''}`;
+                navigator.clipboard.writeText(url);
+              }}
+              className="px-3 py-2 rounded-lg bg-orange-500 text-white text-sm hover:bg-orange-600"
+            >
+              Copiar
+            </button>
           </div>
         </div>
       </div>
