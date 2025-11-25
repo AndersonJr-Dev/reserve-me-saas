@@ -1,18 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+// Adicionei o import do 'use' aqui
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Calendar, User, Clock, Check, AlertCircle } from 'lucide-react';
 import { db, Salon, Service, Professional } from '../../../src/lib/supabase/client';
 
-// --- INTERFACES E TIPAGEM ---
-
+// Atualizei a tipagem para Promise
 interface AppointmentPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
+// --- Interfaces mantidas ---
 interface AppointmentState {
   selectedService: Service | null;
   selectedProfessional: Professional | null;
@@ -24,7 +25,6 @@ interface AppointmentState {
   };
 }
 
-// Interfaces para os componentes filhos (Steps)
 interface Step1Props {
   services: Service[];
   selectedService: Service | null;
@@ -55,6 +55,10 @@ interface Step4Props {
 // --- COMPONENTE PRINCIPAL ---
 
 export default function AppointmentPage({ params }: AppointmentPageProps) {
+  // AQUI ESTÁ A CORREÇÃO MÁGICA: Usamos 'use()' para ler os params
+  const resolvedParams = use(params);
+  const safeSlug = resolvedParams.slug;
+
   const [step, setStep] = useState(1);
   const totalSteps = 4;
 
@@ -72,11 +76,13 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
     customerInfo: { name: '', phone: '', email: '' }
   });
 
-  const safeSlug = params?.slug || '';
   const salonName = salon?.name || (safeSlug ? safeSlug.replace(/-/g, ' ').toUpperCase() : '...');
 
   useEffect(() => {
     const fetchSalonData = async () => {
+      // Log para termos certeza que o slug chegou
+      console.log('Iniciando busca para:', safeSlug);
+      
       if (!safeSlug) return;
 
       try {
@@ -155,7 +161,6 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
 
       if (saved) {
         alert('Agendamento realizado com sucesso!');
-        // window.location.href = '/sucesso';
       } else {
         throw new Error('Falha ao salvar no banco');
       }
@@ -171,7 +176,7 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
         <div className="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div>
-          <p className="text-gray-600">Carregando {safeSlug.replace(/-/g, ' ')}...</p>
+          <p className="text-gray-600">Carregando {safeSlug}...</p>
         </div>
       </div>
     );
