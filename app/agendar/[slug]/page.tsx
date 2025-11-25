@@ -492,22 +492,29 @@ const Step4 = ({ appointment, salon, onUpdateCustomerInfo, onFinalize, prevStep 
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          placeholder="Seu Nome Completo"
-          required
-          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-          value={appointment.customerInfo.name}
-          onChange={e => onUpdateCustomerInfo({...appointment.customerInfo, name: e.target.value})}
-        />
-        <input
-          type="tel"
-          placeholder="Seu WhatsApp (21) 99999-9999"
-          required
-          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-          value={appointment.customerInfo.phone}
-          onChange={e => onUpdateCustomerInfo({...appointment.customerInfo, phone: e.target.value})}
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+          <input
+            type="text"
+            placeholder="Ex: Anderson Junior"
+            required
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            value={appointment.customerInfo.name}
+            onChange={e => onUpdateCustomerInfo({...appointment.customerInfo, name: e.target.value})}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
+          <input
+            type="tel"
+            placeholder="Ex: (21) 99999-9999"
+            required
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            value={appointment.customerInfo.phone}
+            onChange={e => onUpdateCustomerInfo({...appointment.customerInfo, phone: e.target.value})}
+          />
+        </div>
 
         <div className="flex gap-3 pt-2">
           <button 
