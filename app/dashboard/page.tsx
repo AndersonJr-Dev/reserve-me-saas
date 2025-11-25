@@ -1,307 +1,196 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Calendar, Users, Clock, CheckCircle, Settings, LogOut, Plus, BarChart3 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Calendar, Users, CheckCircle, BarChart3, Clock } from 'lucide-react';
+import { db, Appointment } from '../../src/lib/supabase/client'; // Ajuste o caminho se necessário
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  salonId?: string;
-  salonSlug?: string;
-}
-
-type PlanKey = 'free' | 'basic' | 'advanced' | 'premium';
-
-export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null);
+export default function Dashboard() {
   const [loading, setLoading] = useState(true);
-  const [showPlans, setShowPlans] = useState(false);
-  const [upgradeLoadingPlan, setUpgradeLoadingPlan] = useState<PlanKey | null>(null);
-  const [upgradeError, setUpgradeError] = useState<string | null>(null);
+  const [stats, setStats] = useState({
+    todayCount: 0,
+    confirmedCount: 0,
+    professionalsCount: 0,
+    revenue: 0
+  });
+  const [upcoming, setUpcoming] = useState<Appointment[]>([]);
+  const [salonId, setSalonId] = useState<string | null>(null);
 
-  const plans: Array<{ id: PlanKey; title: string; price: number; description: string }> = [
-    { id: 'free', title: 'Gratuito', price: 0, description: 'Para começar sem custo' },
-    { id: 'basic', title: 'Básico', price: 45, description: 'Até 3 funcionários • 1 estabelecimento' },
-    { id: 'advanced', title: 'Avançado', price: 90, description: 'Até 6 funcionários • Relatórios avançados' },
-    { id: 'premium', title: 'Premium', price: 150, description: 'Até 7 funcionários • Até 2 estabelecimentos' }
-  ];
-
-  const handleChoosePlan = async (plan: PlanKey) => {
-    if (plan === 'free') {
-      setShowPlans(false);
-      return;
-    }
-
-    setUpgradeLoadingPlan(plan);
-    setUpgradeError(null);
-
-    try {
-      const response = await fetch('/api/payment/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ planKey: plan })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.checkoutUrl) {
-        throw new Error(data.error || 'Não foi possível iniciar o upgrade.');
-      }
-
-      window.location.href = data.checkoutUrl;
-    } catch (error) {
-      console.error('Erro ao iniciar upgrade:', error);
-      setUpgradeError('Erro ao iniciar pagamento. Tente novamente.');
-    } finally {
-      setUpgradeLoadingPlan(null);
-      setShowPlans(false);
-    }
-  };
+  const supabase = createClientComponentClient();
 
   useEffect(() => {
-    // Verificar se usuário está logado
-    const checkAuth = async () => {
+    const loadDashboard = async () => {
       try {
-        const response = await fetch('/api/auth/me');
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData.user);
-        } else {
-          // Redirecionar para login se não estiver autenticado
-          window.location.href = '/login';
+        setLoading(true);
+        
+        // 1. Pega o usuário logado
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // 2. Descobre o ID do salão desse usuário
+        // (Assumindo que você tem uma tabela users ligando o auth.id ao salon_id
+        // ou busca na tabela salons onde owner_id = user.id)
+        const { data: userSalon } = await supabase
+          .from('users') // ou 'salons' dependendo da sua estrutura
+          .select('salon_id') // ou 'id' se for na tabela salons
+          .eq('id', user.id) // ou 'owner_id'
+          .single();
+
+        // Se não achou na tabela users, tenta buscar direto na salons pelo owner_id
+        let finalSalonId = userSalon?.salon_id;
+        if (!finalSalonId) {
+             const { data: salonByOwner } = await supabase
+                .from('salons')
+                .select('id')
+                .eq('owner_id', user.id) // Importante: owner_id precisa existir na tabela salons
+                .single();
+             finalSalonId = salonByOwner?.id;
         }
+
+        if (!finalSalonId) {
+            console.error("Salão não encontrado para este usuário");
+            setLoading(false);
+            return;
+        }
+
+        setSalonId(finalSalonId);
+
+        // 3. Busca os dados reais usando a função nova
+        const dashboardData = await db.getDashboardData(finalSalonId);
+        
+        // 4. Busca contagem de profissionais
+        const professionals = await db.getProfessionalsBySalonId(finalSalonId);
+
+        if (dashboardData) {
+          setStats({
+            todayCount: dashboardData.stats.todayCount,
+            confirmedCount: dashboardData.stats.confirmedCount,
+            professionalsCount: professionals.length,
+            revenue: 0 // Implementar lógica de receita depois
+          });
+          setUpcoming(dashboardData.upcoming);
+        }
+
       } catch (error) {
-        console.error('Erro ao verificar autenticação:', error);
-        window.location.href = '/login';
+        console.error("Erro ao carregar dashboard:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    checkAuth();
+    loadDashboard();
   }, []);
 
-  const handleLogout = () => {
-    // Limpar localStorage e redirecionar
-    localStorage.removeItem('token');
-    window.location.href = '/';
-  };
-
-  const handleCopyLink = () => {
-    const link = `${window.location.origin}/agendar/${user?.salonSlug || 'seu-salao'}`;
-    navigator.clipboard.writeText(link).then(() => {
-      alert('Link copiado para a área de transferência!');
-    }).catch(() => {
-      alert('Erro ao copiar link');
-    });
-  };
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null; // Será redirecionado pelo useEffect
+    return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center">
-                <div className="bg-gradient-to-r from-orange-500 to-red-500 p-2 rounded-lg">
-                  <Calendar className="w-6 h-6 text-white" />
-                </div>
-                <span className="ml-2 text-xl font-bold text-gray-900">Reserve.me</span>
-              </Link>
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-6 text-gray-800">Visão Geral</h1>
+      
+      {/* Cards de Estatísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <Calendar className="w-6 h-6 text-blue-600" />
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Bem Vindo, {user?.name}</span>
-              <button
-                onClick={handleLogout}
-                className="flex items-center text-gray-600 hover:text-gray-800"
-              >
-                <LogOut className="w-4 h-4 mr-1" />
-                Sair
-              </button>
-            </div>
+            <span className="text-sm font-medium text-gray-500">Hoje</span>
           </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-xl p-8 text-white mb-8">
-          <h1 className="text-3xl font-bold mb-2">Bem Vindo, {user?.name}!</h1>
-          <p className="text-orange-100">
-            Gerencie seus agendamentos e configure seu estabelecimento
-          </p>
+          <h3 className="text-2xl font-bold text-gray-800">{stats.todayCount}</h3>
+          <p className="text-sm text-gray-500 mt-1">Agendamentos</p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border">
-            <div className="flex items-center">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <Calendar className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Agendamentos Hoje</p>
-                <p className="text-2xl font-bold text-gray-900">0</p>
-              </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <div className="bg-green-50 p-3 rounded-lg">
+              <CheckCircle className="w-6 h-6 text-green-600" />
             </div>
+            <span className="text-sm font-medium text-gray-500">Total</span>
           </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border">
-            <div className="flex items-center">
-              <div className="bg-green-100 p-3 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Confirmados</p>
-                <p className="text-2xl font-bold text-gray-900">0</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border">
-            <div className="flex items-center">
-              <div className="bg-orange-100 p-3 rounded-lg">
-                <Users className="w-6 h-6 text-orange-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Profissionais</p>
-                <p className="text-2xl font-bold text-gray-900">0</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border">
-            <div className="flex items-center">
-              <div className="bg-purple-100 p-3 rounded-lg">
-                <BarChart3 className="w-6 h-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Receita Mensal</p>
-                <p className="text-2xl font-bold text-gray-900">R$ 0,00</p>
-              </div>
-            </div>
-          </div>
+          <h3 className="text-2xl font-bold text-gray-800">{stats.confirmedCount}</h3>
+          <p className="text-sm text-gray-500 mt-1">Confirmados</p>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Ações Rápidas</h2>
-            <div className="space-y-3">
-              <Link href="/dashboard/servicos" className="w-full flex items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">
-                <Plus className="w-5 h-5 text-orange-600 mr-3" />
-                <span className="text-gray-900 font-medium">Adicionar Serviço</span>
-              </Link>
-              <Link href="/dashboard/profissionais" className="w-full flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                <Users className="w-5 h-5 text-blue-600 mr-3" />
-                <span className="text-gray-900 font-medium">Gerenciar Profissionais</span>
-              </Link>
-              <Link href="/dashboard/configuracoes" className="w-full flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-                <Settings className="w-5 h-5 text-green-600 mr-3" />
-                <span className="text-gray-900 font-medium">Configurações</span>
-              </Link>
-                {/* Botão de upgrade para planos pagos (abre modal de escolha) */}
-                <button onClick={() => setShowPlans(true)} className="w-full flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-                  <BarChart3 className="w-5 h-5 text-purple-600 mr-3" />
-                  <span className="text-gray-900 font-medium">Fazer Upgrade</span>
-                </button>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <div className="bg-orange-50 p-3 rounded-lg">
+              <Users className="w-6 h-6 text-orange-600" />
             </div>
+            <span className="text-sm font-medium text-gray-500">Equipe</span>
           </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Próximos Agendamentos</h2>
-            <div className="space-y-3">
-              <div className="text-center py-8 text-gray-500">
-                <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p className="text-sm font-medium">Nenhum agendamento ainda</p>
-                <p className="text-xs mt-1">Comece adicionando serviços e compartilhe o link com seus clientes!</p>
-              </div>
-            </div>
-          </div>
+          <h3 className="text-2xl font-bold text-gray-800">{stats.professionalsCount}</h3>
+          <p className="text-sm text-gray-500 mt-1">Profissionais</p>
         </div>
 
-        {/* Link para agendamento público */}
-        <div className="mt-8 bg-white rounded-xl p-6 shadow-sm border">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Seu Link de Agendamento</h2>
-          <div className="flex items-center space-x-4">
-            <div className="flex-1 bg-gray-50 p-3 rounded-lg">
-              <code className="text-sm text-gray-700">
-                {typeof window !== 'undefined' ? `${window.location.origin}/agendar/${user?.salonSlug || 'seu-salao'}` : 'https://reserve.me/agendar/seu-salao'}
-              </code>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <div className="bg-purple-50 p-3 rounded-lg">
+              <BarChart3 className="w-6 h-6 text-purple-600" />
             </div>
-            <button 
-              onClick={handleCopyLink}
-              className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
-            >
-              Copiar Link
+            <span className="text-sm font-medium text-gray-500">Receita</span>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-800">R$ {stats.revenue},00</h3>
+          <p className="text-sm text-gray-500 mt-1">Mensal</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Ações Rápidas (Mantive igual) */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h2 className="text-lg font-bold text-gray-800 mb-4">Ações Rápidas</h2>
+          <div className="space-y-3">
+            <button className="w-full p-3 text-left bg-orange-50 hover:bg-orange-100 rounded-lg text-orange-700 font-medium transition-colors flex items-center">
+              <span className="mr-2 text-xl">+</span> Adicionar Serviço
+            </button>
+            <button className="w-full p-3 text-left bg-blue-50 hover:bg-blue-100 rounded-lg text-blue-700 font-medium transition-colors flex items-center">
+              <Users className="w-5 h-5 mr-2" /> Gerenciar Profissionais
+            </button>
+            <button className="w-full p-3 text-left bg-green-50 hover:bg-green-100 rounded-lg text-green-700 font-medium transition-colors flex items-center">
+              <span className="mr-2">⚙️</span> Configurações
             </button>
           </div>
-          <p className="text-sm text-gray-600 mt-2">
-            Compartilhe este link com seus clientes para que eles possam agendar online
-          </p>
         </div>
-        {/* Modal de seleção de planos */}
-        {showPlans && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="bg-white rounded-xl p-6 w-full max-w-2xl mx-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold">Escolha um plano</h3>
-                <button onClick={() => setShowPlans(false)} className="text-gray-600">Fechar</button>
-              </div>
-              <div className="grid gap-4">
-                {upgradeError ? (
-                  <p className="text-sm text-red-600">{upgradeError}</p>
-                ) : null}
-                {plans.filter(p => p.id !== 'free').map((p) => (
-                  <div key={p.id} className="border rounded-lg p-4 flex justify-between items-center hover:shadow-sm transition-shadow">
-                    <div>
-                      <div className="font-semibold text-gray-900 flex items-center">
-                        {p.title}
-                        {p.id === 'advanced' && (
-                          <span className="ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">Popular</span>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">{p.description}</div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="text-orange-600 font-bold">R$ {p.price.toFixed(2)}<span className="text-sm text-gray-500">/mês</span></div>
-                      <button
-                        onClick={() => handleChoosePlan(p.id)}
-                        disabled={upgradeLoadingPlan === p.id}
-                        className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        {upgradeLoadingPlan === p.id ? 'Carregando...' : 'Escolher'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+
+        {/* Lista de Próximos Agendamentos (Dinâmica) */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h2 className="text-lg font-bold text-gray-800 mb-4">Próximos Agendamentos</h2>
+          
+          {upcoming.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 text-gray-400">
+              <Clock className="w-12 h-12 mb-2 opacity-20" />
+              <p>Nenhum agendamento futuro</p>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="space-y-4">
+              {upcoming.map((app) => {
+                const date = new Date(app.appointment_date);
+                return (
+                  <div key={app.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg border border-gray-100 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-indigo-100 text-indigo-700 font-bold p-2 rounded-lg text-center min-w-[50px]">
+                        <div className="text-xs uppercase">{date.toLocaleDateString('pt-BR', { month: 'short' })}</div>
+                        <div className="text-lg">{date.getDate()}</div>
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-800">{app.customer_name}</p>
+                        <p className="text-xs text-gray-500 flex items-center">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded-full">
+                      Confirmado
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
-}
+};

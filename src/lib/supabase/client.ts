@@ -147,6 +147,54 @@ export const db = {
     
     return data || [];
   },
+
+  // Buscar dados para o Dashboard (Hoje + Futuros)
+  async getDashboardData(salonId: string) {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    // 1. Buscar agendamentos de HOJE
+    const { data: todayAppointments, error: errorToday } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('salon_id', salonId)
+      .gte('appointment_date', todayStart.toISOString())
+      .lte('appointment_date', todayEnd.toISOString())
+      .order('appointment_date', { ascending: true });
+
+    // 2. Buscar próximos agendamentos (a partir de agora)
+    const { data: upcomingAppointments, error: errorUpcoming } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('salon_id', salonId)
+      .gte('appointment_date', new Date().toISOString()) // A partir de agora
+      .order('appointment_date', { ascending: true })
+      .limit(5); // Pega só os 5 próximos
+
+    // 3. Contar total de confirmados (Geral)
+    const { count: confirmedCount, error: errorCount } = await supabase
+      .from('appointments')
+      .select('*', { count: 'exact', head: true })
+      .eq('salon_id', salonId)
+      .eq('status', 'confirmed');
+
+    if (errorToday || errorUpcoming || errorCount) {
+      console.error('Erro no dashboard:', errorToday || errorUpcoming || errorCount);
+      return null;
+    }
+
+    return {
+      today: todayAppointments || [],
+      upcoming: upcomingAppointments || [],
+      stats: {
+        todayCount: todayAppointments?.length || 0,
+        confirmedCount: confirmedCount || 0,
+      }
+    };
+  },
   // Criar agendamento
   async createAppointment(appointmentData: any): Promise<Appointment | null> {
     const { data, error } = await supabase
