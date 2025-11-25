@@ -89,6 +89,32 @@ export async function POST(request: NextRequest) {
         });
         console.log(`Agendamento ${metadata.appointmentId} atualizado para ${session.payment_status}`);
       }
+
+      const purchaseType = String(metadata.purchaseType || '');
+      const planKey = String((metadata as Record<string, string>).planKey || '');
+      const isPlanPurchase = purchaseType.startsWith('plan-') && ['basic', 'advanced', 'premium'].includes(planKey);
+      if (isPlanPurchase && session.mode === 'subscription') {
+        const email = session.customer_details?.email ?? session.customer_email ?? null;
+        if (email) {
+          const supabase = getSupabaseAdmin();
+          const { data: userRow } = await supabase
+            .from('users')
+            .select('id, salon_id')
+            .eq('email', email)
+            .maybeSingle();
+          if (userRow?.salon_id) {
+            await supabase
+              .from('salons')
+              .update({
+                plan_type: planKey,
+                subscription_status: 'active',
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', userRow.salon_id);
+            console.log(`Plano atualizado para ${planKey} no salão ${userRow.salon_id}`);
+          }
+        }
+      }
     }
 
     if (event.type === 'checkout.session.async_payment_failed') {
