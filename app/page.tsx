@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { Calendar, Users, Clock, CheckCircle, Star, ArrowRight, Phone, Mail, MapPin } from 'lucide-react';
 
+import PlanSubscribeButton from './components/plan-subscribe-button';
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
@@ -229,9 +231,11 @@ export default function HomePage() {
                   <span className="text-gray-800">Faturamento total</span>
                 </li>
               </ul>
-              <Link href="/cadastro?plan=basic" className="w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition-colors font-semibold text-sm block text-center">
-                Começar Agora
-              </Link>
+              <PlanSubscribeButton
+                planKey="basic"
+                label="Assinar Agora"
+                buttonClassName="bg-orange-500 text-white py-2 hover:bg-orange-600"
+              />
             </div>
 
             {/* Plano Avançado */}
@@ -270,9 +274,11 @@ export default function HomePage() {
                   <span className="text-white">Gestão de comissões</span>
                 </li>
               </ul>
-              <Link href="/cadastro?plan=advanced" className="w-full bg-white text-orange-500 py-2 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-sm block text-center">
-                Começar Agora
-              </Link>
+              <PlanSubscribeButton
+                planKey="advanced"
+                label="Assinar Agora"
+                buttonClassName="bg-white text-orange-500 py-2 hover:bg-gray-100"
+              />
             </div>
 
             {/* Plano Premium */}
@@ -308,9 +314,11 @@ export default function HomePage() {
                   <span className="text-gray-800">Suporte prioritário</span>
                 </li>
               </ul>
-              <Link href="/cadastro?plan=premium" className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors font-semibold text-sm block text-center">
-                Começar Agora
-              </Link>
+              <PlanSubscribeButton
+                planKey="premium"
+                label="Assinar Agora"
+                buttonClassName="bg-purple-600 text-white py-2 hover:bg-purple-700"
+              />
             </div>
           </div>
         </div>

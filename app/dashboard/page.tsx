@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Calendar, Users, Clock, CheckCircle, Settings, LogOut, Plus, BarChart3 } from 'lucide-react';
 
@@ -14,22 +13,54 @@ interface User {
   salonSlug?: string;
 }
 
+type PlanKey = 'free' | 'basic' | 'advanced' | 'premium';
+
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showPlans, setShowPlans] = useState(false);
-  const router = useRouter();
-  const plans = [
+  const [upgradeLoadingPlan, setUpgradeLoadingPlan] = useState<PlanKey | null>(null);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
+
+  const plans: Array<{ id: PlanKey; title: string; price: number; description: string }> = [
     { id: 'free', title: 'Gratuito', price: 0, description: 'Para começar sem custo' },
     { id: 'basic', title: 'Básico', price: 45, description: 'Até 3 funcionários • 1 estabelecimento' },
     { id: 'advanced', title: 'Avançado', price: 90, description: 'Até 6 funcionários • Relatórios avançados' },
     { id: 'premium', title: 'Premium', price: 150, description: 'Até 7 funcionários • Até 2 estabelecimentos' }
   ];
 
-  const handleChoosePlan = (plan: { id: string; title: string; price: number }) => {
-    setShowPlans(false);
-    // Navega para checkout com parâmetros do plano
-    router.push(`/checkout?plan=${encodeURIComponent(plan.id)}&price=${plan.price}&title=${encodeURIComponent(plan.title)}`);
+  const handleChoosePlan = async (plan: PlanKey) => {
+    if (plan === 'free') {
+      setShowPlans(false);
+      return;
+    }
+
+    setUpgradeLoadingPlan(plan);
+    setUpgradeError(null);
+
+    try {
+      const response = await fetch('/api/payment/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ planKey: plan })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.checkoutUrl) {
+        throw new Error(data.error || 'Não foi possível iniciar o upgrade.');
+      }
+
+      window.location.href = data.checkoutUrl;
+    } catch (error) {
+      console.error('Erro ao iniciar upgrade:', error);
+      setUpgradeError('Erro ao iniciar pagamento. Tente novamente.');
+    } finally {
+      setUpgradeLoadingPlan(null);
+      setShowPlans(false);
+    }
   };
 
   useEffect(() => {
@@ -240,6 +271,9 @@ export default function DashboardPage() {
                 <button onClick={() => setShowPlans(false)} className="text-gray-600">Fechar</button>
               </div>
               <div className="grid gap-4">
+                {upgradeError ? (
+                  <p className="text-sm text-red-600">{upgradeError}</p>
+                ) : null}
                 {plans.filter(p => p.id !== 'free').map((p) => (
                   <div key={p.id} className="border rounded-lg p-4 flex justify-between items-center hover:shadow-sm transition-shadow">
                     <div>
@@ -253,7 +287,13 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center space-x-3">
                       <div className="text-orange-600 font-bold">R$ {p.price.toFixed(2)}<span className="text-sm text-gray-500">/mês</span></div>
-                      <button onClick={() => handleChoosePlan(p)} className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors">Escolher</button>
+                      <button
+                        onClick={() => handleChoosePlan(p.id)}
+                        disabled={upgradeLoadingPlan === p.id}
+                        className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {upgradeLoadingPlan === p.id ? 'Carregando...' : 'Escolher'}
+                      </button>
                     </div>
                   </div>
                 ))}
