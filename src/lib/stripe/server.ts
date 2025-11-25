@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
-
-const STRIPE_API_VERSION: Stripe.StripeConfig['apiVersion'] = '2025-11-17.clover';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const STRIPE_API_VERSION = '2024-11-20.acacia' as any;
 
 let stripeSingleton: Stripe | null = null;
 
