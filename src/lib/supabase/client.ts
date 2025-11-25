@@ -1,13 +1,20 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Create the client only if environment variables are provided.
-// This avoids throwing during build-time when env vars are not set locally.
-export const supabase: SupabaseClient | null = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null
+// Debug: Verificar se as variáveis estão carregando (Isso vai aparecer no console do navegador)
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('🚨 ERRO CRÍTICO: Variáveis de ambiente do Supabase não encontradas!');
+  console.log('URL:', supabaseUrl);
+  console.log('KEY:', supabaseAnonKey ? 'Definida (Oculta)' : 'Não definida');
+}
 
-// Interfaces para tipagem
+// Cria o cliente forçando a existência das chaves (ou quebra com erro visível)
+export const supabase = createClient(supabaseUrl!, supabaseAnonKey!)
+
+// --- INTERFACES (Atualizadas com photo_url) ---
+
 export interface Salon {
   id: string;
   name: string;
@@ -18,6 +25,7 @@ export interface Salon {
   address?: string;
   owner_id?: string;
   plan_type?: string;
+  working_hours?: any; // Adicionado para evitar erros de tipagem
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +49,7 @@ export interface Professional {
   specialty?: string;
   phone?: string;
   email?: string;
+  photo_url?: string; // <--- ADICIONADO AQUI
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -61,26 +70,13 @@ export interface Appointment {
   updated_at: string;
 }
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'owner' | 'admin' | 'staff';
-  salon_id?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+// --- FUNÇÕES DE BANCO DE DADOS ---
 
-// Funções para interagir com o Supabase
 export const db = {
   // Buscar salão por slug
   async getSalonBySlug(slug: string): Promise<Salon | null> {
-    if (!supabase) {
-      console.error('Cliente Supabase não inicializado');
-      return null;
-    }
-
+    console.log(`📡 Buscando salão: ${slug}...`);
+    
     const { data, error } = await supabase
       .from('salons')
       .select('*')
@@ -88,160 +84,61 @@ export const db = {
       .single();
     
     if (error) {
-      console.error('Erro ao buscar salão:', error);
+      console.error('❌ Erro Supabase (getSalonBySlug):', error);
       return null;
     }
     
+    console.log('✅ Salão encontrado:', data?.name);
     return data;
   },
 
-  // Buscar serviços de um salão
+  // Buscar serviços
   async getServicesBySalonId(salonId: string): Promise<Service[]> {
-    if (!supabase) {
-      console.error('Cliente Supabase não inicializado');
-      return [];
-    }
-
-      const { data, error } = await supabase
-        .from('services')
-        .select('*')
-        .eq('salon_id', salonId)
-        .eq('is_active', true)
-        .order('name');
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .eq('salon_id', salonId)
+      .eq('is_active', true)
+      .order('name');
     
     if (error) {
-      console.error('Erro ao buscar serviços:', error);
+      console.error('❌ Erro Supabase (getServices):', error);
       return [];
     }
-    
     return data || [];
   },
 
-  // Buscar profissionais de um salão
+  // Buscar profissionais
   async getProfessionalsBySalonId(salonId: string): Promise<Professional[]> {
-    if (!supabase) {
-      console.error('Cliente Supabase não inicializado');
-      return [];
-    }
-      const { data, error } = await supabase
-        .from('professionals')
-        .select('*')
-        .eq('salon_id', salonId)
-        .eq('is_active', true)
-        .order('name');
+    const { data, error } = await supabase
+      .from('professionals')
+      .select('*')
+      .eq('salon_id', salonId)
+      .eq('is_active', true)
+      .order('name');
     
     if (error) {
-      console.error('Erro ao buscar profissionais:', error);
+      console.error('❌ Erro Supabase (getProfessionals):', error);
       return [];
     }
-    
     return data || [];
   },
 
   // Criar agendamento
-  async createAppointment(appointmentData: {
-    salon_id: string;
-    service_id: string;
-    professional_id?: string;
-    appointment_date: string;
-    customer_name: string;
-    customer_phone: string;
-    customer_email?: string;
-    status?: string;
-  }): Promise<Appointment | null> {
-    if (!supabase) {
-      console.error('Cliente Supabase não inicializado');
-      return null;
-    }
-      const { data, error } = await supabase
-        .from('appointments')
-        .insert([{
-          ...appointmentData,
-          status: appointmentData.status || 'confirmed'
-        }])
-        .select()
-        .single();
+  async createAppointment(appointmentData: any): Promise<Appointment | null> {
+    const { data, error } = await supabase
+      .from('appointments')
+      .insert([{
+        ...appointmentData,
+        status: appointmentData.status || 'confirmed'
+      }])
+      .select()
+      .single();
     
     if (error) {
-      console.error('Erro ao criar agendamento:', error);
+      console.error('❌ Erro Supabase (createAppointment):', error);
       return null;
     }
-    
-    return data;
-  },
-
-  // Criar usuário
-  async createUser(userData: {
-    name: string;
-    email: string;
-    role: string;
-    salon_id?: string;
-  }): Promise<User | null> {
-    if (!supabase) {
-      console.error('Cliente Supabase não inicializado');
-      return null;
-    }
-      const { data, error } = await supabase
-        .from('users')
-        .insert([userData])
-        .select()
-        .single();
-    
-    if (error) {
-      console.error('Erro ao criar usuário:', error);
-      return null;
-    }
-    
-    return data;
-  },
-
-  // Buscar usuário por email
-  async getUserByEmail(email: string): Promise<User | null> {
-    if (!supabase) {
-      console.error('Cliente Supabase não inicializado');
-      return null;
-    }
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .single();
-    
-    if (error) {
-      console.error('Erro ao buscar usuário:', error);
-      return null;
-    }
-    
-    return data;
-  },
-
-  // Criar salão
-  async createSalon(salonData: {
-    name: string;
-    slug: string;
-    description?: string;
-    phone?: string;
-    email?: string;
-    address?: string;
-    owner_id?: string;
-  }): Promise<Salon | null> {
-    if (!supabase) {
-      console.error('Cliente Supabase não inicializado');
-      return null;
-    }
-      const { data, error } = await supabase
-        .from('salons')
-        .insert([salonData])
-        .select()
-        .single();
-    
-    if (error) {
-      console.error('Erro ao criar salão:', error);
-      return null;
-    }
-    
     return data;
   }
 };
-
-  // Função removida pois não estava sendo utilizada
