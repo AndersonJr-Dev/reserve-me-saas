@@ -1,19 +1,53 @@
 'use client';
 
-// Adicionei o import do 'use' aqui
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Calendar, User, Clock, Check, AlertCircle } from 'lucide-react';
 import { db, Salon, Service, Professional } from '../../../src/lib/supabase/client';
 
-// Atualizei a tipagem para Promise
+// --- HELPER: GERAÇÃO DE HORÁRIOS ---
+const WEEKDAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function generateSlotsForDate(date: Date, workingHours: any, intervalMinutes: number = 60) {
+  if (!workingHours) return [];
+
+  const dayIndex = date.getDay(); // 0 = Domingo, 1 = Segunda...
+  const dayKey = WEEKDAY_KEYS[dayIndex];
+  const config = workingHours[dayKey];
+
+  // Se não tiver configuração para esse dia ou estiver fechado
+  if (!config || !config.isOpen) {
+    return [];
+  }
+
+  const slots = [];
+  const [openH, openM] = (config.open || "09:00").split(':').map(Number);
+  const [closeH, closeM] = (config.close || "18:00").split(':').map(Number);
+
+  const current = new Date(date);
+  current.setHours(openH, openM, 0, 0);
+
+  const end = new Date(date);
+  end.setHours(closeH, closeM, 0, 0);
+
+  while (current < end) {
+    const timeString = current.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    slots.push(timeString);
+    current.setMinutes(current.getMinutes() + intervalMinutes);
+  }
+
+  return slots;
+}
+
+// --- INTERFACES ---
+
 interface AppointmentPageProps {
   params: Promise<{
     slug: string;
   }>;
 }
 
-// --- Interfaces mantidas ---
 interface AppointmentState {
   selectedService: Service | null;
   selectedProfessional: Professional | null;
@@ -42,6 +76,8 @@ interface Step3Props {
   selectedDateTime: Date | null;
   onSelectDateTime: (date: Date) => void;
   prevStep: () => void;
+  salonId: string;
+  salon: Salon | null;
 }
 
 interface Step4Props {
@@ -55,7 +91,6 @@ interface Step4Props {
 // --- COMPONENTE PRINCIPAL ---
 
 export default function AppointmentPage({ params }: AppointmentPageProps) {
-  // AQUI ESTÁ A CORREÇÃO MÁGICA: Usamos 'use()' para ler os params
   const resolvedParams = use(params);
   const safeSlug = resolvedParams.slug;
 
@@ -68,6 +103,7 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const [appointment, setAppointment] = useState<AppointmentState>({
     selectedService: null,
@@ -80,9 +116,6 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
 
   useEffect(() => {
     const fetchSalonData = async () => {
-      // Log para termos certeza que o slug chegou
-      console.log('Iniciando busca para:', safeSlug);
-      
       if (!safeSlug) return;
 
       try {
@@ -160,7 +193,7 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
       const saved = await db.createAppointment(appointmentData);
 
       if (saved) {
-        alert('Agendamento realizado com sucesso!');
+        setIsSuccess(true);
       } else {
         throw new Error('Falha ao salvar no banco');
       }
@@ -171,12 +204,14 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
     }
   };
 
+  // --- RENDERS CONDICIONAIS ---
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
         <div className="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div>
-          <p className="text-gray-600">Carregando {safeSlug}...</p>
+          <p className="text-gray-600">Carregando {safeSlug.replace(/-/g, ' ')}...</p>
         </div>
       </div>
     );
@@ -197,6 +232,41 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
           >
             Voltar ao Início
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // TELA DE SUCESSO
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white shadow-lg rounded-xl p-8 text-center animate-in fade-in zoom-in duration-300">
+          <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-100 mb-6">
+            <Check className="h-10 w-10 text-green-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Agendamento Confirmado!</h2>
+          <p className="text-gray-600 mb-6">
+            Obrigado, <strong>{appointment.customerInfo.name}</strong>. Seu horário no <strong>{salon?.name}</strong> foi reservado com sucesso.
+          </p>
+          
+          <div className="bg-gray-50 rounded-lg p-4 mb-6 text-sm text-left space-y-2 border border-gray-100">
+             <div className="flex justify-between">
+                <span className="text-gray-500">Data:</span>
+                <span className="font-semibold">{appointment.selectedDateTime?.toLocaleDateString('pt-BR')} às {appointment.selectedDateTime?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit'})}</span>
+             </div>
+             <div className="flex justify-between">
+                <span className="text-gray-500">Serviço:</span>
+                <span className="font-semibold">{appointment.selectedService?.name}</span>
+             </div>
+          </div>
+
+          <button 
+            onClick={() => window.location.reload()}
+            className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-lg shadow-indigo-200"
+          >
+            Fazer Novo Agendamento
+          </button>
         </div>
       </div>
     );
@@ -253,7 +323,9 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
           <Step3 
             selectedDateTime={appointment.selectedDateTime}
             onSelectDateTime={selectDateTime}
-            prevStep={prevStep} 
+            prevStep={prevStep}
+            salonId={salon?.id || ''}
+            salon={salon}
           />
         )}
         
@@ -376,8 +448,11 @@ const Step2 = ({ professionals, selectedProfessional, onSelectProfessional, prev
   </div>
 );
 
-const Step3 = ({ selectedDateTime: _selectedDateTime, onSelectDateTime, prevStep }: Step3Props) => {
+const Step3 = ({ selectedDateTime: _selectedDateTime, onSelectDateTime, prevStep, salonId, salon }: Step3Props) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [occupiedTimes, setOccupiedTimes] = useState<string[]>([]);
+  const [loadingTimes, setLoadingTimes] = useState(false);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   
   const dates = Array.from({ length: 14 }, (_, i) => {
     const d = new Date();
@@ -385,7 +460,41 @@ const Step3 = ({ selectedDateTime: _selectedDateTime, onSelectDateTime, prevStep
     return d;
   });
 
-  const times = ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'];
+  // 1. Calcula horários baseados no JSON do salão
+  useEffect(() => {
+    if (salon?.working_hours && selectedDate) {
+      const slots = generateSlotsForDate(selectedDate, salon.working_hours);
+      setAvailableSlots(slots);
+    } else {
+      // Fallback (lista fixa antiga) caso não tenha configuração
+      setAvailableSlots(['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00']);
+    }
+  }, [selectedDate, salon]);
+
+  // 2. Verifica disponibilidade no banco
+  useEffect(() => {
+    if (!selectedDate || !salonId) return;
+
+    const checkAvailability = async () => {
+      setLoadingTimes(true);
+      try {
+        const appointments = await db.getAppointmentsByDate(salonId, selectedDate.toISOString());
+        
+        const busy = appointments.map(app => {
+          const d = new Date(app.appointment_date);
+          return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        });
+
+        setOccupiedTimes(busy);
+      } catch (err) {
+        console.error("Erro ao verificar horário:", err);
+      } finally {
+        setLoadingTimes(false);
+      }
+    };
+
+    checkAvailability();
+  }, [selectedDate, salonId]);
 
   const handleTimeClick = (time: string) => {
     if (!selectedDate) return;
@@ -410,7 +519,7 @@ const Step3 = ({ selectedDateTime: _selectedDateTime, onSelectDateTime, prevStep
             className={`flex-shrink-0 w-16 h-20 rounded-xl flex flex-col items-center justify-center border-2 transition-all ${
               selectedDate?.toDateString() === date.toDateString()
                 ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-105'
-                : 'border-gray-100 hover:border-indigo-200 text-gray-600'
+                : 'border-gray-100 hover:border-indigo-200 text-gray-600 bg-white'
             }`}
           >
             <span className="text-xs font-medium uppercase">
@@ -422,16 +531,36 @@ const Step3 = ({ selectedDateTime: _selectedDateTime, onSelectDateTime, prevStep
       </div>
 
       {selectedDate ? (
-        <div className="grid grid-cols-4 gap-2 animate-in fade-in duration-300">
-          {times.map(time => (
-            <button
-              key={time}
-              onClick={() => handleTimeClick(time)}
-              className="py-2 px-1 rounded-lg text-sm font-medium border border-gray-200 hover:border-indigo-500 hover:text-indigo-600 transition-colors"
-            >
-              {time}
-            </button>
-          ))}
+        <div className="min-h-[150px]">
+          {loadingTimes ? (
+            <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>
+          ) : (
+            <div className="grid grid-cols-4 gap-2 animate-in fade-in duration-300">
+              {availableSlots.length > 0 ? (
+                availableSlots.map(time => {
+                  const isOccupied = occupiedTimes.includes(time);
+                  return (
+                    <button
+                      key={time}
+                      disabled={isOccupied}
+                      onClick={() => handleTimeClick(time)}
+                      className={`py-2 px-1 rounded-lg text-sm font-medium border transition-colors ${
+                        isOccupied 
+                          ? 'bg-gray-100 text-gray-400 border-gray-100 cursor-not-allowed decoration-slice line-through' 
+                          : 'border-gray-200 hover:border-indigo-500 hover:text-indigo-600 bg-white'
+                      }`}
+                    >
+                      {time}
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="col-span-4 text-center py-8 bg-gray-50 rounded-lg border border-dashed">
+                  <p className="text-gray-500">Fechado neste dia.</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         <div className="text-center py-8 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">

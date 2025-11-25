@@ -123,7 +123,30 @@ export const db = {
     }
     return data || [];
   },
+  // Buscar agendamentos de um dia específico (para verificar disponibilidade)
+  async getAppointmentsByDate(salonId: string, dateStr: string): Promise<Appointment[]> {
+    // dateStr deve vir no formato YYYY-MM-DD ou ISO
+    const startOfDay = new Date(dateStr);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(dateStr);
+    endOfDay.setHours(23, 59, 59, 999);
 
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('salon_id', salonId)
+      .gte('appointment_date', startOfDay.toISOString())
+      .lte('appointment_date', endOfDay.toISOString())
+      .neq('status', 'cancelled'); // Ignora os cancelados
+    
+    if (error) {
+      console.error('Erro ao buscar disponibilidade:', error);
+      return [];
+    }
+    
+    return data || [];
+  },
   // Criar agendamento
   async createAppointment(appointmentData: any): Promise<Appointment | null> {
     const { data, error } = await supabase
