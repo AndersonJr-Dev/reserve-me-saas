@@ -7,3 +7,4 @@ export default function PaymentFailurePage({ searchParams }: { searchParams: Rec
   return <FailureClient initial={{ status, statusDetail }} />;
 }
 
+
