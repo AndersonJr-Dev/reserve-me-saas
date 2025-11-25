@@ -25,7 +25,7 @@ export interface Salon {
   address?: string;
   owner_id?: string;
   plan_type?: string;
-  working_hours?: any; // Adicionado para evitar erros de tipagem
+  working_hours?: WorkingHours;
   created_at: string;
   updated_at: string;
 }
@@ -68,6 +68,14 @@ export interface Appointment {
   notes?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface WorkingHours {
+  [weekday: string]: {
+    isOpen: boolean;
+    open?: string;
+    close?: string;
+  } | undefined;
 }
 
 // --- FUNÇÕES DE BANCO DE DADOS ---
@@ -196,7 +204,7 @@ export const db = {
     };
   },
   // Criar agendamento
-  async createAppointment(appointmentData: any): Promise<Appointment | null> {
+  async createAppointment(appointmentData: CreateAppointmentInput): Promise<Appointment | null> {
     const { data, error } = await supabase
       .from('appointments')
       .insert([{
@@ -213,3 +221,15 @@ export const db = {
     return data;
   }
 };
+
+export interface CreateAppointmentInput {
+  salon_id: string;
+  service_id: string;
+  professional_id?: string;
+  appointment_date: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email?: string;
+  status?: Appointment['status'];
+  notes?: string;
+}

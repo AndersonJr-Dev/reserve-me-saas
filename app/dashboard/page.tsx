@@ -7,7 +7,7 @@ import { Calendar, Users, CheckCircle, BarChart3, Clock } from 'lucide-react';
 // CORREÇÃO DE IMPORTAÇÃO (ESTRUTURA: app/dashboard -> src/lib):
 // ../.. volta para a raiz do projeto
 // /src entra na pasta src
-import { db, Appointment } from '../../src/lib/supabase/client'; 
+import { db, Appointment } from '@/lib/supabase/client'; 
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);

@@ -179,7 +179,7 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
         throw new Error('Dados incompletos');
       }
 
-      const appointmentData = {
+      const appointmentData: import('@/lib/supabase/client').CreateAppointmentInput = {
         salon_id: salon.id,
         service_id: appointment.selectedService.id,
         professional_id: appointment.selectedProfessional?.id === 'any' ? undefined : appointment.selectedProfessional?.id,
@@ -448,7 +448,7 @@ const Step2 = ({ professionals, selectedProfessional, onSelectProfessional, prev
   </div>
 );
 
-const Step3 = ({ selectedDateTime: _selectedDateTime, onSelectDateTime, prevStep, salonId, salon }: Step3Props) => {
+const Step3 = ({ onSelectDateTime, prevStep, salonId, salon }: Step3Props) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [occupiedTimes, setOccupiedTimes] = useState<string[]>([]);
   const [loadingTimes, setLoadingTimes] = useState(false);
