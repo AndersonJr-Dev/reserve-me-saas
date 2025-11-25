@@ -100,6 +100,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Salão não encontrado' }, { status: 404 });
     }
 
+    const MAX_SERVICES_BY_PLAN: Record<string, number> = {
+      free: 10,
+      basic: 20,
+      advanced: 50,
+      premium: 200
+    };
+
+    const { data: salonData } = await supabaseService
+      .from('salons')
+      .select('id, plan_type, subscription_status')
+      .eq('id', userData.salon_id)
+      .maybeSingle();
+
+    const currentPlan = (salonData?.plan_type || 'free').toLowerCase();
+    const subscriptionStatus = salonData && 'subscription_status' in salonData
+      ? (salonData.subscription_status as string | null) || 'inactive'
+      : 'inactive';
+    const isPaidPlanActive = subscriptionStatus === 'active' && currentPlan !== 'free';
+    const allowedServices = isPaidPlanActive
+      ? (MAX_SERVICES_BY_PLAN[currentPlan] ?? MAX_SERVICES_BY_PLAN.premium)
+      : MAX_SERVICES_BY_PLAN.free;
+
+    const { count: servicesCount } = await supabaseService
+      .from('services')
+      .select('*', { count: 'exact', head: true })
+      .eq('salon_id', userData.salon_id);
+
+    if ((servicesCount ?? 0) >= allowedServices) {
+      return NextResponse.json({
+        error: 'Limite de serviços do plano atual atingido. Faça upgrade para adicionar mais.'
+      }, { status: 403 });
+    }
+
     // Criar serviço (com tipos numéricos corretos)
     const { data: service, error: serviceError } = await supabaseService
       .from('services')

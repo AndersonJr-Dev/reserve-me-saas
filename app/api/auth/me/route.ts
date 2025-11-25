@@ -60,7 +60,7 @@ export async function GET() {
     // Buscar dados completos do usuário na tabela users usando service role
     const { data: userData, error: userError } = await supabaseService
       .from('users')
-      .select('*, salons(slug)')
+      .select('*, salons(slug, plan_type, subscription_status)')
       .eq('id', user.id)
       .single();
 
@@ -82,6 +82,8 @@ export async function GET() {
 
     // Buscar slug do salão com fallback se relação não estiver configurada
     let salonSlug = userData.salons?.slug || null;
+    const planType = userData.salons?.plan_type || null;
+    const subscriptionStatus = userData.salons?.subscription_status || null;
     if (!salonSlug && userData.salon_id) {
       const { data: salonData, error: salonError } = await supabaseService
         .from('salons')
@@ -101,7 +103,9 @@ export async function GET() {
         email: userData.email,
         role: userData.role,
         salonId: userData.salon_id,
-        salonSlug
+        salonSlug,
+        planType,
+        subscriptionStatus
       }
     });
   } catch (error) {

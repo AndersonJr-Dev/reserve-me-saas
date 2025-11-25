@@ -24,6 +24,9 @@ export default function Dashboard() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [salonId, setSalonId] = useState<string | null>(null);
   const [salonSlug, setSalonSlug] = useState<string | null>(null);
+  const [planType, setPlanType] = useState<string | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [copied, setCopied] = useState<boolean>(false);
 
   const supabase = createClientComponentClient();
 
@@ -40,6 +43,8 @@ export default function Dashboard() {
         const meJson = await meRes.json();
         const finalSalonId: string | null = meJson?.user?.salonId ?? null;
         const finalSalonSlug: string | null = meJson?.user?.salonSlug ?? null;
+        const finalPlanType: string | null = meJson?.user?.planType ?? null;
+        const finalSubscriptionStatus: string | null = meJson?.user?.subscriptionStatus ?? null;
 
         if (!finalSalonId) {
           console.error('ERRO: Salão não encontrado para este usuário.');
@@ -49,6 +54,8 @@ export default function Dashboard() {
 
         setSalonId(finalSalonId);
         setSalonSlug(finalSalonSlug);
+        setPlanType(finalPlanType);
+        setSubscriptionStatus(finalSubscriptionStatus);
 
         // 3. Busca dados do banco em paralelo
         const [dashboardData, professionals, revenue] = await Promise.all([
@@ -136,7 +143,7 @@ export default function Dashboard() {
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Total</span>
             </div>
             <h3 className="text-3xl font-bold text-gray-900">{stats.confirmedCount}</h3>
-            <p className="text-sm text-gray-600 mt-1">Confirmados</p>
+            <p className="text-sm text-gray-600 mt-1">{subscriptionStatus === 'active' && planType !== 'free' ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
           </div>
 
           <div className="bg-white p-6 rounded-xl shadow-sm border">
@@ -158,7 +165,7 @@ export default function Dashboard() {
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Hoje</span>
             </div>
             <h3 className="text-3xl font-bold text-gray-900">R$ {stats.revenueDay.toFixed(2)}</h3>
-            <p className="text-sm text-gray-600 mt-1">Confirmados</p>
+            <p className="text-sm text-gray-600 mt-1">{subscriptionStatus === 'active' && planType !== 'free' ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-sm border">
             <div className="flex items-center justify-between mb-4">
@@ -168,7 +175,7 @@ export default function Dashboard() {
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Semana</span>
             </div>
             <h3 className="text-3xl font-bold text-gray-900">R$ {stats.revenueWeek.toFixed(2)}</h3>
-            <p className="text-sm text-gray-600 mt-1">Confirmados</p>
+            <p className="text-sm text-gray-600 mt-1">{subscriptionStatus === 'active' && planType !== 'free' ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-sm border">
             <div className="flex items-center justify-between mb-4">
@@ -211,7 +218,7 @@ export default function Dashboard() {
 
             <div className="bg-white p-6 rounded-xl shadow-sm border">
               <h2 className="text-lg font-bold text-gray-900 mb-4">Upgrade de Plano</h2>
-              <Link href="/#planos" className="w-full inline-flex items-center justify-center bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors font-semibold">
+              <Link href="/planos" className="w-full inline-flex items-center justify-center bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors font-semibold">
                 Ver Planos
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
@@ -275,17 +282,23 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-2">
             <div className="px-3 py-2 rounded-lg bg-gray-50 border text-gray-900 text-sm">
-              {salonSlug ? `/agendar/${salonSlug}` : 'Configurar URL do salão nas Configurações'}
+              {salonSlug ? `${process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '')}/agendar/${salonSlug}` : 'Configurar URL do salão nas Configurações'}
             </div>
             <button
               onClick={() => {
-                const url = salonSlug ? `/agendar/${salonSlug}` : '';
-                if (url) navigator.clipboard.writeText(url);
+                const base = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+                const url = salonSlug ? `${base}/agendar/${salonSlug}` : '';
+                if (url) {
+                  navigator.clipboard.writeText(url);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }
               }}
               className="px-3 py-2 rounded-lg bg-orange-500 text-white text-sm hover:bg-orange-600"
             >
               Copiar
             </button>
+            {copied && <span className="text-sm text-green-600">Copiado!</span>}
           </div>
         </div>
       </div>
