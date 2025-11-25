@@ -203,6 +203,63 @@ export const db = {
       }
     };
   },
+  async getRevenueStats(salonId: string) {
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const startOfWeek = new Date(now);
+    const day = startOfWeek.getDay();
+    const diffToMonday = (day + 6) % 7;
+    startOfWeek.setDate(startOfWeek.getDate() - diffToMonday);
+    startOfWeek.setHours(0, 0, 0, 0);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    startOfMonth.setHours(0, 0, 0, 0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    const fetchApps = async (from: Date, to: Date) => {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('id, service_id, appointment_date, status')
+        .eq('salon_id', salonId)
+        .gte('appointment_date', from.toISOString())
+        .lte('appointment_date', to.toISOString())
+        .in('status', ['confirmed', 'completed']);
+      if (error) return [] as { service_id: string }[];
+      return (data || []) as { service_id: string }[];
+    };
+
+    const [dayApps, weekApps, monthApps] = await Promise.all([
+      fetchApps(startOfDay, endOfDay),
+      fetchApps(startOfWeek, endOfWeek),
+      fetchApps(startOfMonth, endOfMonth)
+    ]);
+
+    const uniqIds = Array.from(new Set([
+      ...dayApps.map(a => a.service_id),
+      ...weekApps.map(a => a.service_id),
+      ...monthApps.map(a => a.service_id)
+    ].filter(Boolean)));
+
+    const { data: servicesData } = await supabase
+      .from('services')
+      .select('id, price')
+      .in('id', uniqIds.length ? uniqIds : ['__none__']);
+
+    const priceById = new Map<string, number>();
+    (servicesData || []).forEach(s => priceById.set(s.id as string, Number(s.price)));
+
+    const sum = (apps: { service_id: string }[]) => apps.reduce((acc, a) => acc + (priceById.get(a.service_id) || 0), 0);
+
+    return { day: sum(dayApps), week: sum(weekApps), month: sum(monthApps) };
+  },
   // Criar agendamento
   async createAppointment(appointmentData: CreateAppointmentInput): Promise<Appointment | null> {
     const { data, error } = await supabase

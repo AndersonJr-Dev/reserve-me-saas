@@ -16,7 +16,9 @@ export default function Dashboard() {
     todayCount: 0,
     confirmedCount: 0,
     professionalsCount: 0,
-    revenue: 0
+    revenueDay: 0,
+    revenueWeek: 0,
+    revenueMonth: 0
   });
   const [upcoming, setUpcoming] = useState<Appointment[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -49,9 +51,10 @@ export default function Dashboard() {
         setSalonSlug(finalSalonSlug);
 
         // 3. Busca dados do banco em paralelo
-        const [dashboardData, professionals] = await Promise.all([
+        const [dashboardData, professionals, revenue] = await Promise.all([
           db.getDashboardData(finalSalonId),
-          db.getProfessionalsBySalonId(finalSalonId)
+          db.getProfessionalsBySalonId(finalSalonId),
+          db.getRevenueStats(finalSalonId)
         ]);
 
         if (dashboardData) {
@@ -59,7 +62,9 @@ export default function Dashboard() {
             todayCount: dashboardData.stats.todayCount || 0,
             confirmedCount: dashboardData.stats.confirmedCount || 0,
             professionalsCount: professionals ? professionals.length : 0,
-            revenue: 0 
+            revenueDay: revenue?.day || 0,
+            revenueWeek: revenue?.week || 0,
+            revenueMonth: revenue?.month || 0
           });
           setUpcoming(dashboardData.upcoming || []);
         }
@@ -150,10 +155,30 @@ export default function Dashboard() {
               <div className="bg-orange-50 p-3 rounded-lg">
                 <BarChart3 className="w-6 h-6 text-orange-600" />
               </div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Hoje</span>
             </div>
-            <h3 className="text-3xl font-bold text-gray-900">R$ {stats.revenue},00</h3>
-            <p className="text-sm text-gray-600 mt-1">Estimada (Mensal)</p>
+            <h3 className="text-3xl font-bold text-gray-900">R$ {stats.revenueDay.toFixed(2)}</h3>
+            <p className="text-sm text-gray-600 mt-1">Confirmados</p>
+          </div>
+          <div className="bg-white p-6 rounded-xl shadow-sm border">
+            <div className="flex items-center justify-between mb-4">
+              <div className="bg-orange-50 p-3 rounded-lg">
+                <BarChart3 className="w-6 h-6 text-orange-600" />
+              </div>
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Semana</span>
+            </div>
+            <h3 className="text-3xl font-bold text-gray-900">R$ {stats.revenueWeek.toFixed(2)}</h3>
+            <p className="text-sm text-gray-600 mt-1">Confirmados</p>
+          </div>
+          <div className="bg-white p-6 rounded-xl shadow-sm border">
+            <div className="flex items-center justify-between mb-4">
+              <div className="bg-orange-50 p-3 rounded-lg">
+                <BarChart3 className="w-6 h-6 text-orange-600" />
+              </div>
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Mês</span>
+            </div>
+            <h3 className="text-3xl font-bold text-gray-900">R$ {stats.revenueMonth.toFixed(2)}</h3>
+            <p className="text-sm text-gray-600 mt-1">Confirmados</p>
           </div>
         </div>
 
