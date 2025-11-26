@@ -11,6 +11,7 @@ export default function LoginPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const verifyBanner = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('verify') === 'true';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +61,12 @@ export default function LoginPage() {
             <span className="ml-3 text-2xl font-bold text-gray-900">Reserve.me</span>
           </Link>
         </div>
+
+        {verifyBanner && (
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg mb-6 text-center">
+            Verifique seu e-mail para ativar seu plano de teste. Após confirmar, faça login normalmente.
+          </div>
+        )}
 
         {/* Formulário */}
         <div className="bg-white rounded-xl shadow-lg p-8">

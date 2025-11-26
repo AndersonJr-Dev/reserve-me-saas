@@ -83,7 +83,7 @@ export async function GET() {
     // Buscar slug do salão com fallback se relação não estiver configurada
     let salonSlug = userData.salons?.slug || null;
     const planType = userData.salons?.plan_type || null;
-    const subscriptionStatus = userData.salons?.subscription_status || null;
+    let subscriptionStatus = userData.salons?.subscription_status || null;
     if (!salonSlug && userData.salon_id) {
       const { data: salonData, error: salonError } = await supabaseService
         .from('salons')
@@ -94,6 +94,14 @@ export async function GET() {
       if (!salonError && salonData?.slug) {
         salonSlug = salonData.slug;
       }
+    }
+
+    if (userData.salons && planType === 'basic' && subscriptionStatus === 'inactive' && user.email_confirmed_at) {
+      await supabaseService
+        .from('salons')
+        .update({ subscription_status: 'active', updated_at: new Date().toISOString() })
+        .eq('id', userData.salon_id);
+      subscriptionStatus = 'active';
     }
 
     return NextResponse.json({

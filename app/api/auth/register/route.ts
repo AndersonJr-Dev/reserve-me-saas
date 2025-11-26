@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
-      email_confirm: true,
+      email_confirm: false,
       user_metadata: {
         name,
         salon_slug: salon.slug
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         address: salon.address,
         owner_id: authData.user.id,
         plan_type: trial && plan === 'basic' ? 'basic' : 'free',
-        subscription_status: trial && plan === 'basic' ? 'active' : 'inactive'
+        subscription_status: trial && plan === 'basic' ? 'inactive' : 'inactive'
       }])
       .select()
       .single();
@@ -178,6 +178,10 @@ export async function POST(request: NextRequest) {
         maxAge: 60 * 60 * 24 // 24 horas
       });
     }
+
+    try {
+      await supabase.auth.admin.inviteUserByEmail(email);
+    } catch {}
 
     return response;
   } catch (error) {

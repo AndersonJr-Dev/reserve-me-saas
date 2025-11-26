@@ -30,6 +30,7 @@ export default function Dashboard() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [userName, setUserName] = useState<string | null>(null);
+  const [waTemplate, setWaTemplate] = useState<string | null>(null);
 
   const supabase = createClientComponentClient();
 
@@ -61,6 +62,10 @@ export default function Dashboard() {
         setPlanType(finalPlanType);
         setSubscriptionStatus(finalSubscriptionStatus);
         setUserName(finalUserName);
+        try {
+          const tpl = localStorage.getItem('whatsappTemplate');
+          if (tpl) setWaTemplate(tpl);
+        } catch {}
 
         // 3. Busca dados do banco em paralelo
         const [dashboardData, prosData, servicesData, revenue] = await Promise.all([
@@ -273,6 +278,17 @@ export default function Dashboard() {
                   const date = new Date(app.appointment_date);
                   const service = services.find(s => s.id === app.service_id);
                   const professional = professionals.find(p => p.id === app.professional_id);
+                  const toE164 = (raw: string | null | undefined) => {
+                    const digits = String(raw || '').replace(/\D/g, '');
+                    if (!digits) return '';
+                    return digits.startsWith('55') ? digits : `55${digits}`;
+                  };
+                  const message = waTemplate
+                    ? waTemplate
+                        .replace('{data}', date.toLocaleDateString('pt-BR'))
+                        .replace('{hora}', date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
+                        .replace('{servico}', service ? service.name : '')
+                    : `Olá, estou passando para confirmar seu agendamento para ${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}${service ? ` de ${service.name}` : ''}. Posso confirmar sua presença?`;
                   return (
                     <div key={app.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-gray-50 rounded-xl border transition-all">
                       <div className="flex items-center gap-4">
@@ -308,7 +324,7 @@ export default function Dashboard() {
                       <div className="mt-3 sm:mt-0 flex items-center justify-end gap-2">
                         {app.customer_phone && (
                           <a
-                            href={`https://wa.me/${String(app.customer_phone).replace(/\D/g, '')}?text=${encodeURIComponent(`Olá, estou passando para confirmar seu agendamento para ${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}${service ? ` de ${service.name}` : ''}. Posso confirmar sua presença?`)}`}
+                            href={`https://api.whatsapp.com/send?phone=${toE164(app.customer_phone)}&text=${encodeURIComponent(message)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center px-3 py-1 text-xs font-semibold bg-green-600 text-white rounded-md hover:bg-green-700"
@@ -316,9 +332,9 @@ export default function Dashboard() {
                             <Phone className="w-3.5 h-3.5 mr-1.5" /> WhatsApp
                           </a>
                         )}
-                        <span className="px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded-full border flex items-center">
-                          <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>
-                          Confirmado
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border flex items-center ${app.status === 'confirmed' ? 'bg-green-100 text-green-700' : app.status === 'completed' ? 'bg-blue-100 text-blue-700' : app.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${app.status === 'confirmed' ? 'bg-green-500' : app.status === 'completed' ? 'bg-blue-500' : app.status === 'cancelled' ? 'bg-red-500' : 'bg-yellow-500'}`}></span>
+                          {app.status === 'confirmed' ? 'Confirmado' : app.status === 'completed' ? 'Concluído' : app.status === 'cancelled' ? 'Cancelado' : 'Não compareceu'}
                         </span>
                       </div>
                     </div>

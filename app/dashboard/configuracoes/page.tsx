@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Calendar, ArrowLeft, Save, Settings, Building, Phone, Mail, MapPin } from 'lucide-react';
 
@@ -45,6 +45,14 @@ export default function ConfiguracoesPage() {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [waTemplate, setWaTemplate] = useState<string>('Olá, estou passando para confirmar seu agendamento para {data} às {hora} de {servico}. Posso confirmar sua presença?');
+
+  useEffect(() => {
+    try {
+      const tpl = localStorage.getItem('whatsappTemplate');
+      if (tpl) setWaTemplate(tpl);
+    } catch {}
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +81,9 @@ export default function ConfiguracoesPage() {
         setErrorMsg(json?.error || 'Erro ao salvar configurações');
       } else {
         setSaved(true);
+        try {
+          localStorage.setItem('whatsappTemplate', waTemplate);
+        } catch {}
         // Atualizar estado com resposta do servidor se houver
         if (json?.salon) {
           const s = json.salon;
@@ -288,6 +299,16 @@ export default function ConfiguracoesPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border">
+            <h2 className="text-xl font-bold text-gray-900 mb-3">Mensagem padrão de WhatsApp</h2>
+            <p className="text-sm text-gray-600 mb-4">Use variáveis {`{data}`}, {`{hora}`}, {`{servico}`}. Esta mensagem será usada no botão WhatsApp dos agendamentos.</p>
+            <textarea
+              value={waTemplate}
+              onChange={(e) => setWaTemplate(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 h-28"
+            />
           </div>
 
           {/* Botão Salvar */}
