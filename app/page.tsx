@@ -118,9 +118,9 @@ export default function HomePage() {
               <div className="bg-orange-500 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
                 <CheckCircle className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Confirmação Automática</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Confirmação Simplificada</h3>
               <p className="text-gray-600">
-                Sistema envia confirmações automáticas e lembretes para reduzir faltas e melhorar a experiência.
+                Confirmações pelo WhatsApp e status automático em pagamentos, reduzindo faltas e agilizando o fluxo.
               </p>
             </div>
 
@@ -140,7 +140,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Integração WhatsApp</h3>
               <p className="text-gray-600">
-                Notificações via WhatsApp para confirmações e lembretes, mantendo contato direto com clientes.
+                Botão de WhatsApp com mensagem personalizada para confirmações e contato direto com clientes.
               </p>
             </div>
           </div>
