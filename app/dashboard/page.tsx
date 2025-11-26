@@ -8,7 +8,7 @@ import { Calendar, Users, CheckCircle, BarChart3, Clock, Settings, PlusCircle, A
 // CORREÇÃO DE IMPORTAÇÃO (ESTRUTURA: app/dashboard -> src/lib):
 // ../.. volta para a raiz do projeto
 // /src entra na pasta src
-import { db, Appointment } from '@/lib/supabase/client'; 
+import { db, Appointment, Service, Professional } from '@/lib/supabase/client'; 
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
@@ -21,6 +21,8 @@ export default function Dashboard() {
     revenueMonth: 0
   });
   const [upcoming, setUpcoming] = useState<Appointment[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [salonId, setSalonId] = useState<string | null>(null);
   const [salonSlug, setSalonSlug] = useState<string | null>(null);
@@ -58,9 +60,10 @@ export default function Dashboard() {
         setSubscriptionStatus(finalSubscriptionStatus);
 
         // 3. Busca dados do banco em paralelo
-        const [dashboardData, professionals, revenue] = await Promise.all([
+        const [dashboardData, prosData, servicesData, revenue] = await Promise.all([
           db.getDashboardData(finalSalonId),
           db.getProfessionalsBySalonId(finalSalonId),
+          db.getServicesBySalonId(finalSalonId),
           db.getRevenueStats(finalSalonId)
         ]);
 
@@ -68,12 +71,14 @@ export default function Dashboard() {
           setStats({
             todayCount: dashboardData.stats.todayCount || 0,
             confirmedCount: dashboardData.stats.confirmedCount || 0,
-            professionalsCount: professionals ? professionals.length : 0,
+            professionalsCount: prosData ? prosData.length : 0,
             revenueDay: revenue?.day || 0,
             revenueWeek: revenue?.week || 0,
             revenueMonth: revenue?.month || 0
           });
           setUpcoming(dashboardData.upcoming || []);
+          setProfessionals(prosData || []);
+          setServices(servicesData || []);
         }
 
       } catch (error) {
@@ -242,6 +247,8 @@ export default function Dashboard() {
               <div className="space-y-4">
                 {upcoming.map((app) => {
                   const date = new Date(app.appointment_date);
+                  const service = services.find(s => s.id === app.service_id);
+                  const professional = professionals.find(p => p.id === app.professional_id);
                   return (
                     <div key={app.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-gray-50 rounded-xl border transition-all">
                       <div className="flex items-center gap-4">
@@ -256,6 +263,21 @@ export default function Dashboard() {
                               <Clock className="w-3 h-3 mr-1" />
                               {date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                               </span>
+                              {professional && (
+                                <span className="text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
+                                  {professional.name}
+                                </span>
+                              )}
+                              {service && (
+                                <span className="text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
+                                  {service.name}
+                                </span>
+                              )}
+                              {service && (
+                                <span className="text-xs text-orange-700 bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
+                                  R$ {Number(service.price).toFixed(2)}
+                                </span>
+                              )}
                           </div>
                         </div>
                       </div>
