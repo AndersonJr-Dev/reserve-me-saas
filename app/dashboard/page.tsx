@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Calendar, Users, CheckCircle, BarChart3, Clock, Settings, PlusCircle, ArrowRight } from 'lucide-react';
+import { Calendar, Users, CheckCircle, BarChart3, Clock, Settings, PlusCircle, ArrowRight, LogOut, Phone } from 'lucide-react';
 
 // CORREÇÃO DE IMPORTAÇÃO (ESTRUTURA: app/dashboard -> src/lib):
 // ../.. volta para a raiz do projeto
@@ -29,6 +29,7 @@ export default function Dashboard() {
   const [planType, setPlanType] = useState<string | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  const [userName, setUserName] = useState<string | null>(null);
 
   const supabase = createClientComponentClient();
 
@@ -47,6 +48,7 @@ export default function Dashboard() {
         const finalSalonSlug: string | null = meJson?.user?.salonSlug ?? null;
         const finalPlanType: string | null = meJson?.user?.planType ?? null;
         const finalSubscriptionStatus: string | null = meJson?.user?.subscriptionStatus ?? null;
+        const finalUserName: string | null = meJson?.user?.name ?? null;
 
         if (!finalSalonId) {
           console.error('ERRO: Salão não encontrado para este usuário.');
@@ -58,6 +60,7 @@ export default function Dashboard() {
         setSalonSlug(finalSalonSlug);
         setPlanType(finalPlanType);
         setSubscriptionStatus(finalSubscriptionStatus);
+        setUserName(finalUserName);
 
         // 3. Busca dados do banco em paralelo
         const [dashboardData, prosData, servicesData, revenue] = await Promise.all([
@@ -109,15 +112,36 @@ export default function Dashboard() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
+            <div className="flex items-center gap-3">
               <div className="bg-gradient-to-r from-orange-500 to-red-500 p-2 rounded-lg">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
-              <span className="ml-2 text-xl font-bold text-gray-900">Reserve.me</span>
+              <div>
+                <div className="text-sm text-gray-500">Bem-vindo{userName ? ',' : ''}</div>
+                <div className="text-xl font-bold text-gray-900">{userName || 'Cliente'}</div>
+              </div>
+              <span className="text-xs text-orange-700 bg-orange-50 px-2 py-1 rounded-md border border-orange-200">
+                Cliente Plano {planType ? planType : 'free'}
+              </span>
             </div>
-            <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </span>
+              <button
+                onClick={async () => {
+                  try {
+                    await supabase.auth.signOut();
+                  } finally {
+                    window.location.href = '/login';
+                  }
+                }}
+                className="inline-flex items-center bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -281,11 +305,21 @@ export default function Dashboard() {
                           </div>
                         </div>
                       </div>
-                      <div className="mt-3 sm:mt-0 flex items-center justify-end">
-                          <span className="px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded-full border flex items-center">
+                      <div className="mt-3 sm:mt-0 flex items-center justify-end gap-2">
+                        {app.customer_phone && (
+                          <a
+                            href={`https://wa.me/${String(app.customer_phone).replace(/\D/g, '')}?text=${encodeURIComponent(`Olá, estou passando para confirmar seu agendamento para ${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}${service ? ` de ${service.name}` : ''}. Posso confirmar sua presença?`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center px-3 py-1 text-xs font-semibold bg-green-600 text-white rounded-md hover:bg-green-700"
+                          >
+                            <Phone className="w-3.5 h-3.5 mr-1.5" /> WhatsApp
+                          </a>
+                        )}
+                        <span className="px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded-full border flex items-center">
                           <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>
                           Confirmado
-                          </span>
+                        </span>
                       </div>
                     </div>
                   );

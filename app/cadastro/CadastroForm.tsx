@@ -35,6 +35,17 @@ export default function CadastroForm() {
     setLoading(true);
     setError('');
 
+    const isValidEmail = (email: string) => {
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+      return re.test(email);
+    };
+
+    if (!isValidEmail(formData.email)) {
+      setError('Informe um e-mail válido');
+      setLoading(false);
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError('As senhas não coincidem');
       setLoading(false);

@@ -9,9 +9,21 @@ export async function POST(request: NextRequest) {
   try {
     const { name, email, password, salon, plan, trial } = await request.json();
 
+    const isValidEmail = (value: string) => {
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+      return re.test(value);
+    };
+
     if (!name || !email || !password || !salon?.name || !salon?.slug) {
       return NextResponse.json(
         { error: 'Todos os campos são obrigatórios' },
+        { status: 400 }
+      );
+    }
+
+    if (!isValidEmail(email)) {
+      return NextResponse.json(
+        { error: 'E-mail inválido' },
         { status: 400 }
       );
     }
