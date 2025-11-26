@@ -164,7 +164,7 @@ export default function Dashboard() {
               </div>
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Hoje</span>
             </div>
-            <h3 className="text-3xl font-bold text-gray-900">R$ {stats.revenueDay.toFixed(2)}</h3>
+            <h3 className="text-3xl font-bold text-gray-900">{subscriptionStatus === 'active' && planType !== 'free' ? `R$ ${stats.revenueDay.toFixed(2)}` : '—'}</h3>
             <p className="text-sm text-gray-600 mt-1">{subscriptionStatus === 'active' && planType !== 'free' ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-sm border">
@@ -174,7 +174,7 @@ export default function Dashboard() {
               </div>
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Semana</span>
             </div>
-            <h3 className="text-3xl font-bold text-gray-900">R$ {stats.revenueWeek.toFixed(2)}</h3>
+            <h3 className="text-3xl font-bold text-gray-900">{subscriptionStatus === 'active' && planType !== 'free' ? `R$ ${stats.revenueWeek.toFixed(2)}` : '—'}</h3>
             <p className="text-sm text-gray-600 mt-1">{subscriptionStatus === 'active' && planType !== 'free' ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-sm border">
@@ -184,8 +184,8 @@ export default function Dashboard() {
               </div>
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Mês</span>
             </div>
-            <h3 className="text-3xl font-bold text-gray-900">R$ {stats.revenueMonth.toFixed(2)}</h3>
-            <p className="text-sm text-gray-600 mt-1">Confirmados</p>
+            <h3 className="text-3xl font-bold text-gray-900">{subscriptionStatus === 'active' && planType !== 'free' ? `R$ ${stats.revenueMonth.toFixed(2)}` : '—'}</h3>
+            <p className="text-sm text-gray-600 mt-1">{subscriptionStatus === 'active' && planType !== 'free' ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
           </div>
         </div>
 

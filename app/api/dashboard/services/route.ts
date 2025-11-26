@@ -101,10 +101,10 @@ export async function POST(request: NextRequest) {
     }
 
     const MAX_SERVICES_BY_PLAN: Record<string, number> = {
-      free: 10,
-      basic: 20,
-      advanced: 50,
-      premium: 200
+      free: 5,
+      basic: 10,
+      advanced: 20,
+      premium: 50
     };
 
     const { data: salonData } = await supabaseService
