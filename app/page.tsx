@@ -401,11 +401,11 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-center">
                   <Phone className="w-4 h-4 mr-2" />
-                  <span>(11) 99999-9999</span>
+                  <span>(21) 99422-0180</span>
                 </div>
                 <div className="flex items-center">
                   <MapPin className="w-4 h-4 mr-2" />
-                  <span>São Paulo, SP</span>
+                  <span>Rio de Janeiro, RJ</span>
                 </div>
               </div>
             </div>
