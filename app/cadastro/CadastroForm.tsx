@@ -57,6 +57,8 @@ export default function CadastroForm() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
+          plan: isTrialSignup ? 'basic' : 'free',
+          trial: isTrialSignup,
           salon: {
             name: formData.salonName,
             slug: formData.salonSlug,

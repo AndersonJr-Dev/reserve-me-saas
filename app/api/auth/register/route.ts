@@ -7,7 +7,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 // POST /api/auth/register - Criar conta
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password, salon } = await request.json();
+    const { name, email, password, salon, plan, trial } = await request.json();
 
     if (!name || !email || !password || !salon?.name || !salon?.slug) {
       return NextResponse.json(
@@ -60,14 +60,16 @@ export async function POST(request: NextRequest) {
     
     const { data: salonData, error: salonError } = await supabase
       .from('salons')
-      .insert([{
+      .insert([{ 
         name: salon.name,
         slug: salon.slug,
         description: salon.description,
         phone: salon.phone,
         email: salon.email,
         address: salon.address,
-        owner_id: authData.user.id
+        owner_id: authData.user.id,
+        plan_type: trial && plan === 'basic' ? 'basic' : 'free',
+        subscription_status: trial && plan === 'basic' ? 'active' : 'inactive'
       }])
       .select()
       .single();

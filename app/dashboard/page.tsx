@@ -143,7 +143,7 @@ export default function Dashboard() {
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Total</span>
             </div>
             <h3 className="text-3xl font-bold text-gray-900">{stats.confirmedCount}</h3>
-            <p className="text-sm text-gray-600 mt-1">{subscriptionStatus === 'active' && planType !== 'free' ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
+            <p className="text-sm text-gray-600 mt-1">Confirmados</p>
           </div>
 
           <div className="bg-white p-6 rounded-xl shadow-sm border">
@@ -164,8 +164,8 @@ export default function Dashboard() {
               </div>
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Hoje</span>
             </div>
-            <h3 className="text-3xl font-bold text-gray-900">{subscriptionStatus === 'active' && planType !== 'free' ? `R$ ${stats.revenueDay.toFixed(2)}` : '—'}</h3>
-            <p className="text-sm text-gray-600 mt-1">{subscriptionStatus === 'active' && planType !== 'free' ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
+            <h3 className="text-3xl font-bold text-gray-900">{(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? `R$ ${stats.revenueDay.toFixed(2)}` : '—'}</h3>
+            <p className="text-sm text-gray-600 mt-1">{(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-sm border">
             <div className="flex items-center justify-between mb-4">
@@ -174,8 +174,8 @@ export default function Dashboard() {
               </div>
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Semana</span>
             </div>
-            <h3 className="text-3xl font-bold text-gray-900">{subscriptionStatus === 'active' && planType !== 'free' ? `R$ ${stats.revenueWeek.toFixed(2)}` : '—'}</h3>
-            <p className="text-sm text-gray-600 mt-1">{subscriptionStatus === 'active' && planType !== 'free' ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
+            <h3 className="text-3xl font-bold text-gray-900">{(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? `R$ ${stats.revenueWeek.toFixed(2)}` : '—'}</h3>
+            <p className="text-sm text-gray-600 mt-1">{(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-sm border">
             <div className="flex items-center justify-between mb-4">
@@ -184,8 +184,8 @@ export default function Dashboard() {
               </div>
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Mês</span>
             </div>
-            <h3 className="text-3xl font-bold text-gray-900">{subscriptionStatus === 'active' && planType !== 'free' ? `R$ ${stats.revenueMonth.toFixed(2)}` : '—'}</h3>
-            <p className="text-sm text-gray-600 mt-1">{subscriptionStatus === 'active' && planType !== 'free' ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
+            <h3 className="text-3xl font-bold text-gray-900">{(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? `R$ ${stats.revenueMonth.toFixed(2)}` : '—'}</h3>
+            <p className="text-sm text-gray-600 mt-1">{(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
           </div>
         </div>
 
