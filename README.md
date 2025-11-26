@@ -1,6 +1,6 @@
 # Reserve.me
 
-Um sistema completo de agendamento online feito especialmente para salões de beleza, barbearias e clínicas. Surgiu da necessidade de ajudar pequenos negócios a se organizarem melhor e não perderem clientes por causa de desorganização na agenda.
+Um sistema completo de agendamento online feito especialmente para salões de beleza e barbearias. Surgiu da necessidade de ajudar pequenos negócios a se organizarem melhor e não perderem clientes por causa de desorganização na agenda.
 
 ## Sobre o Projeto
 
@@ -59,24 +59,26 @@ ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
 1. Cliente agenda um serviço ou escolhe um plano
 2. É redirecionado para o Stripe Checkout
 3. Finaliza com cartão de crédito/débito ou carteiras digitais
-4. Recebe confirmação automática por email
+4. Recebe confirmação automática do Stripe por email sobre o pagamento
 
 ### Para Estabelecimentos:
 1. Recebem o status atualizado no dashboard
 2. Supabase registra o ID do pagamento e o status
-3. Relatórios de faturamento usam os dados do Stripe
+3. Métricas de receita usam os dados do Stripe nos planos pagos
 
 ## Funcionalidades Principais
 
-**Agendamento Online** - Clientes acessam o link único do estabelecimento e agendam sozinhos, qualquer hora do dia ou da noite.
+**Agendamento Online** – Clientes acessam o link único do estabelecimento e agendam sozinhos, 24/7.
 
-**Gestão de Profissionais** - Cada profissional tem sua própria agenda. Dá pra ver quem tem mais cliente, quem tá disponível e controlar tudo com facilidade.
+**Gestão de Profissionais** – Controle de profissionais com limites por plano.
 
-**CRM de Clientes** - Guarda nome, telefone, email de cada cliente. Vai acumulando histórico conforme vão agendando.
+**Gestão de Serviços** – Cadastro de serviços com preço e duração, limitado por plano.
 
-**Relatórios** - Nos planos pagos, dá pra ver faturamento, quantos atendimentos foram feitos no mês, ticket médio e outras métricas importantes.
+**Métricas de Receita (Planos Pagos)** – Visual de receita diária/semanal/mensal no dashboard.
 
-**Link Personalizado** - Cada estabelecimento ganha seu próprio link: reserve.me/agendar/seu-salao. É só compartilhar e os clientes agendam direto.
+**Link Personalizado** – Cada estabelecimento ganha seu próprio link público de agendamento.
+
+**WhatsApp de Confirmação** – Botão de WhatsApp com template personalizável para confirmar presença (envio manual pelo usuário). Não há disparo automático neste momento.
 
 ## Tecnologias que Usei
 
@@ -123,30 +125,30 @@ Acesse `http://localhost:3000` e veja funcionando.
 
 ## Planos Disponíveis
 
-**Gratuito (R$ 0/mês)** - Pra profissional autônomo que tá começando
-- 1 usuário
-- 1 estabelecimento  
-- Agenda online e página pública de agendamento
-- Gestão de serviços
-- CRM básico de clientes
+**Grátis (R$ 0/mês)** – Para começar sem custo
+- 1 profissional ativo
+- Até 5 serviços
+- Agenda online e link público
+- Botão de WhatsApp para confirmação (manual)
+- Sem métricas de receita/CRM
 
-**Básico (R$ 45/mês)** - Pra quem tem até 3 funcionários
-- Até 3 funcionários
-- Agenda individual por funcionário
-- CRM completo com histórico
-- Relatórios simples de faturamento
+**Básico (R$ 45/mês)** – Para operar com o essencial
+- Até 3 profissionais ativos
+- Até 10 serviços
+- Agenda online
+- Link público com slug
+- Métricas de receita básicas no dashboard
 
-**Avançado (R$ 90/mês)** - Mais popular, pra negócios em crescimento
-- Até 6 funcionários
-- Lembretes automáticos via WhatsApp
-- Relatórios financeiros (fluxo de caixa, ticket médio)
-- Gestão de comissões
+**Avançado (R$ 90/mês)** – Mais atrativo para crescimento
+- Até 6 profissionais ativos
+- Até 20 serviços
+- Métricas de receita completas
+- Priorização de suporte
 
-**Premium (R$ 150/mês)** - Pra quem tem múltiplos estabelecimentos
-- Até 7 funcionários
-- Até 2 estabelecimentos (multi-loja)
-- Gestão de estoque
-- Relatórios de desempenho e comparativos
+**Premium (R$ 150/mês)** – Para grandes salões e franquias
+- Até 10 profissionais ativos
+- Até 50 serviços
+- Relatórios completos de receita
 - Suporte prioritário
 
 ## Estrutura do Projeto
@@ -185,14 +187,8 @@ Resumindo: conecta o GitHub, configura as variáveis de ambiente e pronto. Toda 
 
 MIT License - Usa à vontade, modifica, compartilha.
 
-## Contato
+## Autor
 
-Email: juniorgn7dev@gmail.com
-
+Nome: Anderson Assumpção Junior  
+Email: juniorgn7dev@gmail.com  
 GitHub: [@AndersonJr-Dev](https://github.com/AndersonJr-Dev)
-
-Site: https://andersondev-silk.vercel.app
-
----
-
-Desenvolvido por mim, Anderson Junior. Decidi criar isso porque acredito que automatização não deve custar um rim. Qualquer dúvida, só chamar.

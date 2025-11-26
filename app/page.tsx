@@ -170,27 +170,27 @@ export default function HomePage() {
               <ul className="space-y-2 mb-6 text-sm">
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">1 usuário (profissional autônomo)</span>
+                  <span className="text-gray-800">1 profissional ativo</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">1 estabelecimento</span>
+                  <span className="text-gray-800">Até 5 serviços</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">Agenda online</span>
+                  <span className="text-gray-800">Agenda online 24/7</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">Página pública de agendamento</span>
+                  <span className="text-gray-800">Link público com slug</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">Gestão de serviços</span>
+                  <span className="text-gray-800">Botão de WhatsApp para confirmação</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">CRM básico (clientes)</span>
+                  <span className="text-gray-800">Sem métricas de receita/CRM</span>
                 </li>
               </ul>
               <Link href="/cadastro?plan=free" className="w-full bg-green-500 text-white py-2.5 sm:py-2 rounded-lg hover:bg-green-600 transition-colors font-semibold text-sm block text-center">
@@ -208,27 +208,27 @@ export default function HomePage() {
               <ul className="space-y-2 mb-6 text-sm">
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">Até 3 funcionários</span>
+                  <span className="text-gray-800">Agenda online 24/7</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">1 estabelecimento</span>
+                  <span className="text-gray-800">Link público com slug</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">Agenda individual por funcionário</span>
+                  <span className="text-gray-800">Botão de WhatsApp para confirmação</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">CRM completo com histórico</span>
+                  <span className="text-gray-800">Até 3 profissionais ativos</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">Relatórios simples</span>
+                  <span className="text-gray-800">Até 10 serviços</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">Faturamento total</span>
+                  <span className="text-gray-800">Métricas de receita básicas</span>
                 </li>
               </ul>
               <PlanSubscribeButton
@@ -239,7 +239,8 @@ export default function HomePage() {
             </div>
 
             {/* Plano Avançado */}
-            <div className="bg-gradient-to-br from-orange-500 to-red-500 p-5 sm:p-6 rounded-xl shadow-xl transform scale-105">
+            <div className="relative bg-gradient-to-br from-orange-500 to-red-500 p-5 sm:p-6 rounded-xl shadow-xl transform scale-105">
+              <span className="absolute -top-2 left-0 right-0 h-1 bg-white/70 rounded-t-xl"></span>
               <div className="text-center mb-5 sm:mb-6">
                 <div className="bg-white text-orange-500 px-2 py-1 rounded-full text-xs font-semibold mb-2 sm:mb-3 inline-block">
                   Mais Popular
@@ -251,27 +252,31 @@ export default function HomePage() {
               <ul className="space-y-2 mb-6 text-sm">
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-white mr-2 flex-shrink-0" />
-                  <span className="text-white">Até 6 funcionários</span>
+                  <span className="text-white">Agenda online 24/7</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-white mr-2 flex-shrink-0" />
-                  <span className="text-white">1 estabelecimento</span>
+                  <span className="text-white">Link público com slug</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-white mr-2 flex-shrink-0" />
-                  <span className="text-white">Lembretes via WhatsApp</span>
+                  <span className="text-white">Botão de WhatsApp para confirmação</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-white mr-2 flex-shrink-0" />
-                  <span className="text-white">Relatórios financeiros avançados</span>
+                  <span className="text-white">Até 6 profissionais ativos</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-white mr-2 flex-shrink-0" />
-                  <span className="text-white">Fluxo de caixa</span>
+                  <span className="text-white">Até 20 serviços</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-white mr-2 flex-shrink-0" />
-                  <span className="text-white">Gestão de comissões</span>
+                  <span className="text-white">Métricas de receita completas</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-white mr-2 flex-shrink-0" />
+                  <span className="text-white">Suporte priorizado</span>
                 </li>
               </ul>
               <PlanSubscribeButton
@@ -291,23 +296,27 @@ export default function HomePage() {
               <ul className="space-y-2 mb-6 text-sm">
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">Até 7 funcionários</span>
+                  <span className="text-gray-800">Agenda online 24/7</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">Até 2 estabelecimentos</span>
+                  <span className="text-gray-800">Link público com slug</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">Gestão de estoque</span>
+                  <span className="text-gray-800">Botão de WhatsApp para confirmação</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">Relatórios de desempenho</span>
+                  <span className="text-gray-800">Até 10 profissionais ativos</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span className="text-gray-800">Comparativos</span>
+                  <span className="text-gray-800">Até 50 serviços</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-gray-800">Relatórios completos de receita</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
@@ -371,7 +380,7 @@ export default function HomePage() {
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#funcionalidades" className="hover:text-orange-500 transition-colors">Funcionalidades</a></li>
                 <li><a href="#planos" className="hover:text-orange-500 transition-colors">Planos</a></li>
-                <li><a href="https://docs.reserve.me" className="hover:text-orange-500 transition-colors" target="_blank" rel="noopener noreferrer">Documentação</a></li>
+                <li><a href="https://github.com/AndersonJr-Dev/reserve-me-saas#readme" className="hover:text-orange-500 transition-colors" target="_blank" rel="noopener noreferrer">Documentação</a></li>
               </ul>
             </div>
             

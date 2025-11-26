@@ -224,6 +224,18 @@ export const db = {
     startOfMonth.setHours(0, 0, 0, 0);
     endOfMonth.setHours(23, 59, 59, 999);
 
+    const prevWeekStart = new Date(startOfWeek);
+    prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+    prevWeekStart.setHours(0, 0, 0, 0);
+    const prevWeekEnd = new Date(endOfWeek);
+    prevWeekEnd.setDate(prevWeekEnd.getDate() - 7);
+    prevWeekEnd.setHours(23, 59, 59, 999);
+
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+    prevMonthStart.setHours(0, 0, 0, 0);
+    prevMonthEnd.setHours(23, 59, 59, 999);
+
     const fetchApps = async (from: Date, to: Date) => {
       const { data, error } = await supabase
         .from('appointments')
@@ -236,16 +248,20 @@ export const db = {
       return (data || []) as { service_id: string }[];
     };
 
-    const [dayApps, weekApps, monthApps] = await Promise.all([
+    const [dayApps, weekApps, monthApps, prevWeekApps, prevMonthApps] = await Promise.all([
       fetchApps(startOfDay, endOfDay),
       fetchApps(startOfWeek, endOfWeek),
-      fetchApps(startOfMonth, endOfMonth)
+      fetchApps(startOfMonth, endOfMonth),
+      fetchApps(prevWeekStart, prevWeekEnd),
+      fetchApps(prevMonthStart, prevMonthEnd)
     ]);
 
     const uniqIds = Array.from(new Set([
       ...dayApps.map(a => a.service_id),
       ...weekApps.map(a => a.service_id),
-      ...monthApps.map(a => a.service_id)
+      ...monthApps.map(a => a.service_id),
+      ...prevWeekApps.map(a => a.service_id),
+      ...prevMonthApps.map(a => a.service_id)
     ].filter(Boolean)));
 
     const { data: servicesData } = await supabase
@@ -258,7 +274,112 @@ export const db = {
 
     const sum = (apps: { service_id: string }[]) => apps.reduce((acc, a) => acc + (priceById.get(a.service_id) || 0), 0);
 
-    return { day: sum(dayApps), week: sum(weekApps), month: sum(monthApps) };
+    return {
+      day: sum(dayApps),
+      week: sum(weekApps),
+      month: sum(monthApps),
+      dayCount: dayApps.length,
+      weekCount: weekApps.length,
+      monthCount: monthApps.length,
+      prevWeek: sum(prevWeekApps),
+      prevMonth: sum(prevMonthApps)
+    };
+  },
+
+  async getRevenueBreakdownMonthly(salonId: string) {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    startOfMonth.setHours(0, 0, 0, 0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    const { data: apps, error: appsErr } = await this.client
+      .from('appointments')
+      .select('id, service_id, professional_id, status, appointment_date')
+      .eq('salon_id', salonId)
+      .in('status', ['confirmed', 'completed'])
+      .gte('appointment_date', startOfMonth.toISOString())
+      .lte('appointment_date', endOfMonth.toISOString());
+    if (appsErr) return { services: [], professionals: [] };
+
+    const serviceIds = Array.from(new Set((apps || []).map(a => a.service_id).filter(Boolean)));
+    const professionalIds = Array.from(new Set((apps || []).map(a => a.professional_id).filter(Boolean)));
+
+    const [{ data: services }, { data: pros }] = await Promise.all([
+      this.client.from('services').select('id, name, price').in('id', serviceIds),
+      this.client.from('professionals').select('id, name').in('id', professionalIds)
+    ]);
+
+    const priceByService = new Map<string, number>();
+    const nameByService = new Map<string, string>();
+    (services || []).forEach(s => { priceByService.set(s.id, Number(s.price) || 0); nameByService.set(s.id, s.name); });
+
+    const nameByProfessional = new Map<string, string>();
+    (pros || []).forEach(p => { nameByProfessional.set(p.id, p.name); });
+
+    const serviceTotals = new Map<string, number>();
+    const professionalTotals = new Map<string, number>();
+
+    (apps || []).forEach(a => {
+      const v = priceByService.get(a.service_id) || 0;
+      serviceTotals.set(a.service_id, (serviceTotals.get(a.service_id) || 0) + v);
+      professionalTotals.set(a.professional_id, (professionalTotals.get(a.professional_id) || 0) + v);
+    });
+
+    const servicesOut = Array.from(serviceTotals.entries())
+      .map(([id, amount]) => ({ name: nameByService.get(id) || 'Serviço', amount }))
+      .sort((a, b) => b.amount - a.amount);
+
+    const professionalsOut = Array.from(professionalTotals.entries())
+      .map(([id, amount]) => ({ name: nameByProfessional.get(id) || 'Profissional', amount }))
+      .sort((a, b) => b.amount - a.amount);
+
+    return { services: servicesOut, professionals: professionalsOut };
+  },
+
+  async getRevenueBreakdownRange(salonId: string, startISO: string, endISO: string) {
+    const { data: apps, error: appsErr } = await this.client
+      .from('appointments')
+      .select('id, service_id, professional_id, status, appointment_date')
+      .eq('salon_id', salonId)
+      .in('status', ['confirmed', 'completed'])
+      .gte('appointment_date', startISO)
+      .lte('appointment_date', endISO);
+    if (appsErr) return { services: [], professionals: [] };
+
+    const serviceIds = Array.from(new Set((apps || []).map(a => a.service_id).filter(Boolean)));
+    const professionalIds = Array.from(new Set((apps || []).map(a => a.professional_id).filter(Boolean)));
+
+    const [{ data: services }, { data: pros }] = await Promise.all([
+      this.client.from('services').select('id, name, price').in('id', serviceIds),
+      this.client.from('professionals').select('id, name').in('id', professionalIds)
+    ]);
+
+    const priceByService = new Map<string, number>();
+    const nameByService = new Map<string, string>();
+    (services || []).forEach(s => { priceByService.set(s.id, Number(s.price) || 0); nameByService.set(s.id, s.name); });
+
+    const nameByProfessional = new Map<string, string>();
+    (pros || []).forEach(p => { nameByProfessional.set(p.id, p.name); });
+
+    const serviceTotals = new Map<string, number>();
+    const professionalTotals = new Map<string, number>();
+
+    (apps || []).forEach(a => {
+      const v = priceByService.get(a.service_id) || 0;
+      serviceTotals.set(a.service_id, (serviceTotals.get(a.service_id) || 0) + v);
+      professionalTotals.set(a.professional_id, (professionalTotals.get(a.professional_id) || 0) + v);
+    });
+
+    const servicesOut = Array.from(serviceTotals.entries())
+      .map(([id, amount]) => ({ name: nameByService.get(id) || 'Serviço', amount }))
+      .sort((a, b) => b.amount - a.amount);
+
+    const professionalsOut = Array.from(professionalTotals.entries())
+      .map(([id, amount]) => ({ name: nameByProfessional.get(id) || 'Profissional', amount }))
+      .sort((a, b) => b.amount - a.amount);
+
+    return { services: servicesOut, professionals: professionalsOut };
   },
   // Criar agendamento
   async createAppointment(appointmentData: CreateAppointmentInput): Promise<Appointment | null> {

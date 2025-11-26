@@ -18,12 +18,15 @@ export default function Dashboard() {
     professionalsCount: 0,
     revenueDay: 0,
     revenueWeek: 0,
-    revenueMonth: 0
+    revenueMonth: 0,
+    revenueWeekCount: 0,
+    revenueMonthCount: 0,
+    prevWeekRevenue: 0,
+    prevMonthRevenue: 0
   });
   const [upcoming, setUpcoming] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [salonId, setSalonId] = useState<string | null>(null);
   const [salonSlug, setSalonSlug] = useState<string | null>(null);
   const [planType, setPlanType] = useState<string | null>(null);
@@ -31,6 +34,46 @@ export default function Dashboard() {
   const [copied, setCopied] = useState<boolean>(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [waTemplate, setWaTemplate] = useState<string | null>(null);
+  const [topServices, setTopServices] = useState<{ name: string; amount: number }[]>([]);
+  const [topProfessionals, setTopProfessionals] = useState<{ name: string; amount: number }[]>([]);
+  const [monthlyGoal, setMonthlyGoal] = useState<number>(() => {
+    if (typeof window === 'undefined') return 0;
+    const v = window.localStorage.getItem('monthly_goal');
+    return v ? Number(v) : 0;
+  });
+  const [segPeriod, setSegPeriod] = useState<'7' | '30' | 'month'>(() => {
+    if (typeof window === 'undefined') return 'month';
+    return (window.localStorage.getItem('seg_period') as '7' | '30' | 'month') || 'month';
+  });
+  const [serviceGoals, setServiceGoals] = useState<Record<string, number>>(() => {
+    if (typeof window === 'undefined') return {};
+    try { return JSON.parse(window.localStorage.getItem('service_goals') || '{}'); } catch { return {}; }
+  });
+  const [professionalGoals, setProfessionalGoals] = useState<Record<string, number>>(() => {
+    if (typeof window === 'undefined') return {};
+    try { return JSON.parse(window.localStorage.getItem('professional_goals') || '{}'); } catch { return {}; }
+  });
+
+  useEffect(() => {
+    const refetchBreakdown = async () => {
+      if (!salonId) return;
+      if (!(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active')) return;
+      let breakdown;
+      if (segPeriod === 'month') {
+        breakdown = await db.getRevenueBreakdownMonthly(salonId);
+      } else {
+        const now = new Date();
+        const endISO = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
+        const start = new Date(now);
+        start.setDate(start.getDate() - (segPeriod === '7' ? 6 : 29));
+        start.setHours(0,0,0,0);
+        breakdown = await db.getRevenueBreakdownRange(salonId, start.toISOString(), endISO);
+      }
+      setTopServices((breakdown?.services || []).slice(0, 5));
+      setTopProfessionals((breakdown?.professionals || []).slice(0, 5));
+    };
+    refetchBreakdown();
+  }, [segPeriod, planType, subscriptionStatus, salonId]);
 
   const supabase = createClientComponentClient();
 
@@ -85,7 +128,11 @@ export default function Dashboard() {
             professionalsCount: prosData ? prosData.length : 0,
             revenueDay: revenue?.day || 0,
             revenueWeek: revenue?.week || 0,
-            revenueMonth: revenue?.month || 0
+            revenueMonth: revenue?.month || 0,
+            revenueWeekCount: revenue?.weekCount || 0,
+            revenueMonthCount: revenue?.monthCount || 0,
+            prevWeekRevenue: revenue?.prevWeek || 0,
+            prevMonthRevenue: revenue?.prevMonth || 0
           });
           setUpcoming(dashboardData.upcoming || []);
           setProfessionals(prosData || []);
@@ -110,6 +157,321 @@ export default function Dashboard() {
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-orange-500"></div>
           <p className="text-sm font-medium text-gray-500 animate-pulse">Carregando Reserve.me...</p>
         </div>
+
+        {(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
+            <div className="bg-white p-6 rounded-xl shadow-sm border">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-orange-50 p-2 rounded-md">
+                  <BarChart3 className="w-5 h-5 text-orange-600" />
+                </div>
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Ticket Médio Semana</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">{stats.revenueWeekCount > 0 ? `R$ ${(stats.revenueWeek / stats.revenueWeekCount).toFixed(2)}` : '—'}</h3>
+              <p className="text-sm text-gray-600 mt-1">{stats.revenueWeekCount > 0 ? `${stats.revenueWeekCount} atendimentos` : 'Sem dados'}</p>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-orange-50 p-2 rounded-md">
+                  <BarChart3 className="w-5 h-5 text-orange-600" />
+                </div>
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Ticket Médio Mês</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">{stats.revenueMonthCount > 0 ? `R$ ${(stats.revenueMonth / stats.revenueMonthCount).toFixed(2)}` : '—'}</h3>
+              <p className="text-sm text-gray-600 mt-1">{stats.revenueMonthCount > 0 ? `${stats.revenueMonthCount} atendimentos` : 'Sem dados'}</p>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-orange-50 p-2 rounded-md">
+                  <BarChart3 className="w-5 h-5 text-orange-600" />
+                </div>
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Variação Semanal</span>
+              </div>
+              <h3 className={`text-2xl font-bold ${stats.prevWeekRevenue > 0 && (stats.revenueWeek - stats.prevWeekRevenue) >= 0 ? 'text-green-700' : 'text-red-700'}`}>{stats.prevWeekRevenue > 0 ? `${(((stats.revenueWeek - stats.prevWeekRevenue) / stats.prevWeekRevenue) * 100).toFixed(1)}%` : '—'}</h3>
+              <p className="text-sm text-gray-600 mt-1">{stats.prevWeekRevenue > 0 ? 'vs semana anterior' : 'Sem base anterior'}</p>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-orange-50 p-2 rounded-md">
+                  <BarChart3 className="w-5 h-5 text-orange-600" />
+                </div>
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Variação Mensal</span>
+              </div>
+              <h3 className={`text-2xl font-bold ${stats.prevMonthRevenue > 0 && (stats.revenueMonth - stats.prevMonthRevenue) >= 0 ? 'text-green-700' : 'text-red-700'}`}>{stats.prevMonthRevenue > 0 ? `${(((stats.revenueMonth - stats.prevMonthRevenue) / stats.prevMonthRevenue) * 100).toFixed(1)}%` : '—'}</h3>
+              <p className="text-sm text-gray-600 mt-1">{stats.prevMonthRevenue > 0 ? 'vs mês anterior' : 'Sem base anterior'}</p>
+            </div>
+          </div>
+        )}
+
+        {(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <div className="bg-white p-6 rounded-xl shadow-sm border">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900">Top 5 Serviços</h2>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-600">Período</label>
+                  <select
+                    value={segPeriod}
+                    onChange={async (e) => {
+                      const val = e.target.value as '7'|'30'|'month';
+                      setSegPeriod(val);
+                      if (typeof window !== 'undefined') window.localStorage.setItem('seg_period', val);
+                      // Recarregar breakdown
+                      const now = new Date();
+                      const endISO = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
+                      let breakdown;
+                      if (val === 'month') {
+                        breakdown = await db.getRevenueBreakdownMonthly(salonId!);
+                      } else {
+                        const start = new Date(now);
+                        start.setDate(start.getDate() - (val === '7' ? 6 : 29));
+                        start.setHours(0,0,0,0);
+                        breakdown = await db.getRevenueBreakdownRange(salonId!, start.toISOString(), endISO);
+                      }
+                      setTopServices((breakdown?.services || []).slice(0, 5));
+                      setTopProfessionals((breakdown?.professionals || []).slice(0, 5));
+                    }}
+                    className="border rounded-md px-2 py-1 text-sm"
+                  >
+                    <option value="7">7 dias</option>
+                    <option value="30">30 dias</option>
+                    <option value="month">Mês atual</option>
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {topServices.length === 0 ? (
+                  <p className="text-sm text-gray-500">Sem dados</p>
+                ) : (
+                  topServices.map((s, i) => (
+                    <div key={i} className="flex items-center justify-between gap-3">
+                      <span className="text-gray-800 flex-1">{s.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-orange-600">R$ {s.amount.toFixed(2)}</span>
+                        <input
+                          type="number"
+                          value={serviceGoals[s.name] || ''}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            const next = { ...serviceGoals, [s.name]: v };
+                            setServiceGoals(next);
+                            if (typeof window !== 'undefined') window.localStorage.setItem('service_goals', JSON.stringify(next));
+                          }}
+                          placeholder="Meta R$"
+                          className="w-28 border rounded-md px-2 py-1 text-sm"
+                        />
+                      </div>
+                      <div className="w-32 h-2 bg-gray-200 rounded-full">
+                        <div className="h-2 bg-orange-500 rounded-full" style={{ width: `${serviceGoals[s.name] ? Math.min(100, (s.amount / serviceGoals[s.name]) * 100) : 0}%` }} />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border">
+              <h2 className="text-lg font-bold text-gray-900 mb-4">Ranking de Profissionais</h2>
+              <div className="space-y-3">
+                {topProfessionals.length === 0 ? (
+                  <p className="text-sm text-gray-500">Sem dados</p>
+                ) : (
+                  topProfessionals.map((p, i) => (
+                    <div key={i} className="flex items-center justify-between gap-3">
+                      <span className="text-gray-800 flex-1">{p.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-orange-600">R$ {p.amount.toFixed(2)}</span>
+                        <input
+                          type="number"
+                          value={professionalGoals[p.name] || ''}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            const next = { ...professionalGoals, [p.name]: v };
+                            setProfessionalGoals(next);
+                            if (typeof window !== 'undefined') window.localStorage.setItem('professional_goals', JSON.stringify(next));
+                          }}
+                          placeholder="Meta R$"
+                          className="w-28 border rounded-md px-2 py-1 text-sm"
+                        />
+                      </div>
+                      <div className="w-32 h-2 bg-gray-200 rounded-full">
+                        <div className="h-2 bg-orange-500 rounded-full" style={{ width: `${professionalGoals[p.name] ? Math.min(100, (p.amount / professionalGoals[p.name]) * 100) : 0}%` }} />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+            <div className="bg-white p-6 rounded-xl shadow-sm border">
+              <h2 className="text-lg font-bold text-gray-900 mb-3">Meta Mensal</h2>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  value={monthlyGoal || ''}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    setMonthlyGoal(v);
+                    if (typeof window !== 'undefined') window.localStorage.setItem('monthly_goal', String(v));
+                  }}
+                  placeholder="R$"
+                  className="w-40 border rounded-md px-3 py-2"
+                />
+                <span className="text-sm text-gray-600">Defina sua meta</span>
+              </div>
+              <div className="mt-4">
+                <div className="w-full h-2 bg-gray-200 rounded-full">
+                  <div
+                    className="h-2 bg-orange-500 rounded-full"
+                    style={{ width: `${monthlyGoal > 0 ? Math.min(100, (stats.revenueMonth / monthlyGoal) * 100) : 0}%` }}
+                  />
+                </div>
+                <p className="text-sm text-gray-600 mt-2">Progresso: {monthlyGoal > 0 ? `${Math.min(100, ((stats.revenueMonth / monthlyGoal) * 100)).toFixed(1)}%` : '—'}</p>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border">
+              <h2 className="text-lg font-bold text-gray-900 mb-3">Projeção Mensal</h2>
+              <p className="text-sm text-gray-600">Estimativa baseada na receita até hoje</p>
+              <h3 className="text-2xl font-bold text-gray-900 mt-2">{
+                (() => {
+                  const now = new Date();
+                  const elapsed = now.getDate();
+                  const totalDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                  const base = stats.revenueMonth > 0 ? stats.revenueMonth : (stats.revenueWeek > 0 ? (stats.revenueWeek / 7) * elapsed : 0);
+                  const proj = base > 0 ? (base / elapsed) * totalDays : 0;
+                  return proj > 0 ? `R$ ${proj.toFixed(2)}` : '—';
+                })()
+              }</h3>
+            </div>
+            <div className="bg-white p-6 rounded-xl shadow-sm border">
+              <h2 className="text-lg font-bold text-gray-900 mb-3">Exportação</h2>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    const now = new Date();
+                    const name = `financeiro_${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}.csv`;
+                    const rows = [
+                      ['Total Mês', String(stats.revenueMonth.toFixed(2))],
+                      ...topServices.map(s => [`Serviço: ${s.name}`, String(s.amount.toFixed(2))]),
+                      ...topProfessionals.map(p => [`Profissional: ${p.name}`, String(p.amount.toFixed(2))])
+                    ];
+                    const csv = rows.map(r => r.join(',')).join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = name;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="px-3 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600"
+                >
+                  Exportar CSV
+                </button>
+                <button
+                  onClick={() => {
+                    const w = window.open('', 'print');
+                    if (!w) return;
+                    const tableRowsServices = topServices.map(s => `<tr><td>${s.name}</td><td style="text-align:right">R$ ${s.amount.toFixed(2)}</td></tr>`).join('');
+                    const tableRowsPros = topProfessionals.map(p => `<tr><td>${p.name}</td><td style="text-align:right">R$ ${p.amount.toFixed(2)}</td></tr>`).join('');
+                    w.document.write(`
+                      <html>
+                        <head>
+                          <title>Resumo Financeiro</title>
+                          <style>
+                            body { font-family: Arial, sans-serif; padding: 24px; }
+                            h1 { color: #111; margin: 0 0 8px; }
+                            h2 { color: #333; margin: 16px 0 8px; }
+                            .brand { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+                            .badge { background:#f97316; color:#fff; padding:4px 8px; border-radius:999px; font-size:12px; }
+                            table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+                            th, td { border-bottom: 1px solid #eee; padding: 8px; }
+                            th { text-align: left; background:#fafafa; }
+                            .total { font-weight:bold; }
+                          </style>
+                        </head>
+                        <body>
+                          <div class="brand">
+                            <div class="badge">Reserve.me</div>
+                            <div>Resumo Financeiro</div>
+                          </div>
+                          <h1>Total do mês: R$ ${stats.revenueMonth.toFixed(2)}</h1>
+                          <h2>Top Serviços</h2>
+                          <table>
+                            <thead><tr><th>Serviço</th><th style="text-align:right">Receita</th></tr></thead>
+                            <tbody>${tableRowsServices}</tbody>
+                          </table>
+                          <h2>Ranking de Profissionais</h2>
+                          <table>
+                            <thead><tr><th>Profissional</th><th style="text-align:right">Receita</th></tr></thead>
+                            <tbody>${tableRowsPros}</tbody>
+                          </table>
+                        </body>
+                      </html>
+                    `);
+                    w.document.close();
+                    w.focus();
+                    w.print();
+                    w.close();
+                  }}
+                  className="px-3 py-2 bg-gray-900 text-white rounded-md hover:bg-black"
+                >
+                  Exportar PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
+            <div className="bg-white p-6 rounded-xl shadow-sm border">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-orange-50 p-2 rounded-md">
+                  <BarChart3 className="w-5 h-5 text-orange-600" />
+                </div>
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Ticket Médio Semana</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">{stats.revenueWeekCount > 0 ? `R$ ${(stats.revenueWeek / stats.revenueWeekCount).toFixed(2)}` : '—'}</h3>
+              <p className="text-sm text-gray-600 mt-1">{stats.revenueWeekCount > 0 ? `${stats.revenueWeekCount} atendimentos` : 'Sem dados'}</p>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-orange-50 p-2 rounded-md">
+                  <BarChart3 className="w-5 h-5 text-orange-600" />
+                </div>
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Ticket Médio Mês</span>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">{stats.revenueMonthCount > 0 ? `R$ ${(stats.revenueMonth / stats.revenueMonthCount).toFixed(2)}` : '—'}</h3>
+              <p className="text-sm text-gray-600 mt-1">{stats.revenueMonthCount > 0 ? `${stats.revenueMonthCount} atendimentos` : 'Sem dados'}</p>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-orange-50 p-2 rounded-md">
+                  <BarChart3 className="w-5 h-5 text-orange-600" />
+                </div>
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Variação Semanal</span>
+              </div>
+              <h3 className={`text-2xl font-bold ${stats.prevWeekRevenue > 0 && (stats.revenueWeek - stats.prevWeekRevenue) >= 0 ? 'text-green-700' : 'text-red-700'}`}>{stats.prevWeekRevenue > 0 ? `${(((stats.revenueWeek - stats.prevWeekRevenue) / stats.prevWeekRevenue) * 100).toFixed(1)}%` : '—'}</h3>
+              <p className="text-sm text-gray-600 mt-1">{stats.prevWeekRevenue > 0 ? 'vs semana anterior' : 'Sem base anterior'}</p>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-orange-50 p-2 rounded-md">
+                  <BarChart3 className="w-5 h-5 text-orange-600" />
+                </div>
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Variação Mensal</span>
+              </div>
+              <h3 className={`text-2xl font-bold ${stats.prevMonthRevenue > 0 && (stats.revenueMonth - stats.prevMonthRevenue) >= 0 ? 'text-green-700' : 'text-red-700'}`}>{stats.prevMonthRevenue > 0 ? `${(((stats.revenueMonth - stats.prevMonthRevenue) / stats.prevMonthRevenue) * 100).toFixed(1)}%` : '—'}</h3>
+              <p className="text-sm text-gray-600 mt-1">{stats.prevMonthRevenue > 0 ? 'vs mês anterior' : 'Sem base anterior'}</p>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -201,8 +563,8 @@ export default function Dashboard() {
               </div>
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Hoje</span>
             </div>
-            <h3 className="text-3xl font-bold text-gray-900">{(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? `R$ ${stats.revenueDay.toFixed(2)}` : '—'}</h3>
-            <p className="text-sm text-gray-600 mt-1">{(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
+            <h3 className="text-3xl font-bold text-gray-900">{(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? `R$ ${stats.revenueDay.toFixed(2)}` : '—'}</h3>
+            <p className="text-sm text-gray-600 mt-1">{(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? 'Confirmados' : 'Disponível nos planos Avançado e Premium'}</p>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-sm border">
             <div className="flex items-center justify-between mb-4">
@@ -221,8 +583,8 @@ export default function Dashboard() {
               </div>
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Mês</span>
             </div>
-            <h3 className="text-3xl font-bold text-gray-900">{(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? `R$ ${stats.revenueMonth.toFixed(2)}` : '—'}</h3>
-            <p className="text-sm text-gray-600 mt-1">{(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
+            <h3 className="text-3xl font-bold text-gray-900">{(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? `R$ ${stats.revenueMonth.toFixed(2)}` : '—'}</h3>
+            <p className="text-sm text-gray-600 mt-1">{(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? 'Confirmados' : 'Disponível nos planos Avançado e Premium'}</p>
           </div>
         </div>
 
