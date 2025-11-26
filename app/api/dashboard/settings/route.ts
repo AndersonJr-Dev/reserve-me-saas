@@ -131,6 +131,7 @@ export async function PUT(request: NextRequest) {
         email: body.email || null,
         address: body.address || null,
         working_hours: body.workingHours || null,
+        whatsapp_template: body.whatsappTemplate || null,
         updated_at: new Date().toISOString()
       })
       .eq('id', userData.salon_id)

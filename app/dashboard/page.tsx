@@ -63,8 +63,11 @@ export default function Dashboard() {
         setSubscriptionStatus(finalSubscriptionStatus);
         setUserName(finalUserName);
         try {
-          const tpl = localStorage.getItem('whatsappTemplate');
-          if (tpl) setWaTemplate(tpl);
+          const res = await fetch('/api/dashboard/settings', { credentials: 'include' });
+          const json = await res.json();
+          if (res.ok && json?.salon?.whatsapp_template) {
+            setWaTemplate(json.salon.whatsapp_template);
+          }
         } catch {}
 
         // 3. Busca dados do banco em paralelo

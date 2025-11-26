@@ -48,10 +48,26 @@ export default function ConfiguracoesPage() {
   const [waTemplate, setWaTemplate] = useState<string>('Olá, estou passando para confirmar seu agendamento para {data} às {hora} de {servico}. Posso confirmar sua presença?');
 
   useEffect(() => {
-    try {
-      const tpl = localStorage.getItem('whatsappTemplate');
-      if (tpl) setWaTemplate(tpl);
-    } catch {}
+    const load = async () => {
+      try {
+        const res = await fetch('/api/dashboard/settings', { credentials: 'include' });
+        const json = await res.json();
+        if (res.ok && json?.salon) {
+          const s = json.salon;
+          setSettings({
+            name: s.name || '',
+            slug: s.slug || '',
+            description: s.description || '',
+            phone: s.phone || '',
+            email: s.email || '',
+            address: s.address || '',
+            workingHours: s.working_hours || defaultSettings.workingHours
+          });
+          if (s.whatsapp_template) setWaTemplate(s.whatsapp_template);
+        }
+      } catch {}
+    };
+    load();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,7 +87,8 @@ export default function ConfiguracoesPage() {
           phone: settings.phone,
           email: settings.email,
           address: settings.address,
-          workingHours: settings.workingHours
+          workingHours: settings.workingHours,
+          whatsappTemplate: waTemplate
         }),
         credentials: 'include'
       });
@@ -81,9 +98,7 @@ export default function ConfiguracoesPage() {
         setErrorMsg(json?.error || 'Erro ao salvar configurações');
       } else {
         setSaved(true);
-        try {
-          localStorage.setItem('whatsappTemplate', waTemplate);
-        } catch {}
+        // Persistir template no banco via endpoint
         // Atualizar estado com resposta do servidor se houver
         if (json?.salon) {
           const s = json.salon;
