@@ -84,20 +84,8 @@ export default function CadastroForm() {
         throw new Error(errorData.error || 'Erro ao criar conta');
       }
 
-      const data = await response.json();
-
-      if (isTrialSignup) {
-        alert('Cadastro realizado. Verifique seu e-mail para ativar seu plano de teste.');
-        window.location.href = '/login?verify=true';
-        return;
-      }
-
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        window.location.href = '/dashboard';
-      } else {
-        window.location.href = '/login';
-      }
+      alert('Enviamos um e-mail para confirmar sua conta. Verifique sua caixa de entrada.');
+      window.location.href = '/login?verify=true';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
