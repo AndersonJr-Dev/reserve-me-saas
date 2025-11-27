@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Calendar, ArrowLeft } from 'lucide-react';
-import { db, Appointment } from '@/lib/supabase/client';
+import { db, Appointment, Professional } from '@/lib/supabase/client';
 
 export default function AgendamentosPage() {
   const [loading, setLoading] = useState(true);
@@ -11,6 +12,16 @@ export default function AgendamentosPage() {
   const [today, setToday] = useState(new Date());
   const [monthApps, setMonthApps] = useState<Appointment[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const search = useSearchParams();
+  const statusFilter = (search.get('status') as Appointment['status'] | null);
+  const initialScope = (search.get('scope') as 'upcoming' | 'all') || 'upcoming';
+  const [scope, setScope] = useState<'upcoming' | 'all'>(initialScope);
+  const [page, setPage] = useState(0);
+  const pageSize = 10;
+  const [paged, setPaged] = useState<{ items: Appointment[]; total: number }>({ items: [], total: 0 });
+  const router = useRouter();
+  const [selectedStatus, setSelectedStatus] = useState<Appointment['status']>(statusFilter || 'confirmed');
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -22,17 +33,26 @@ export default function AgendamentosPage() {
         setSalonId(sid);
         if (!sid) return;
 
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        startOfMonth.setHours(0,0,0,0);
-        endOfMonth.setHours(23,59,59,999);
-        const apps = await db.getAppointmentsRange(sid, startOfMonth.toISOString(), endOfMonth.toISOString());
-        setMonthApps(apps);
+        if (statusFilter) {
+          const res = await db.getAppointmentsByStatusPaginated(sid, selectedStatus, page, pageSize, scope);
+          setPaged(res);
+          const pros = await db.getProfessionalsBySalonId(sid);
+          setProfessionals(pros || []);
+        } else {
+          const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+          const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+          startOfMonth.setHours(0,0,0,0);
+          endOfMonth.setHours(23,59,59,999);
+          const apps = await db.getAppointmentsRange(sid, startOfMonth.toISOString(), endOfMonth.toISOString());
+          setMonthApps(apps);
+          const pros = await db.getProfessionalsBySalonId(sid);
+          setProfessionals(pros || []);
+        }
       } finally {
         setLoading(false);
       }
     })();
-  }, [today]);
+  }, [today, selectedStatus, page, scope, statusFilter]);
 
   const daysInMonth = useMemo(() => new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate(), [today]);
   const byDay = useMemo(() => {
@@ -84,6 +104,7 @@ export default function AgendamentosPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {!statusFilter ? (
         <div className="grid lg:grid-cols-2 gap-8">
           <div className="bg-white rounded-xl shadow-sm border p-6">
             <div className="flex justify-between items-center mb-4">
@@ -118,6 +139,14 @@ export default function AgendamentosPage() {
 
           <div className="bg-white rounded-xl shadow-sm border p-6">
             <h2 className="text-lg font-bold mb-4">Agendamentos do dia</h2>
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              {Array.from(new Map(selectedApps.map(a => [a.professional_id, a.professional_id])).keys()).filter(Boolean).map(pid => (
+                <span key={String(pid)} className="inline-flex items-center text-xs px-2 py-1 rounded-full border bg-white text-gray-900">
+                  <span className={`w-2 h-2 rounded-full mr-1 ${colorForId(String(pid))}`}></span>
+                  {professionals.find(p => p.id === pid)?.name || 'Profissional'}
+                </span>
+              ))}
+            </div>
             {loading ? (
               <p>Carregando...</p>
             ) : selectedApps.length === 0 ? (
@@ -137,6 +166,64 @@ export default function AgendamentosPage() {
             )}
           </div>
         </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold">Agendamentos</h2>
+                <div className="flex items-center bg-white border border-gray-300 rounded-full p-1">
+                  {(['pending','confirmed','completed','cancelled','no_show'] as Appointment['status'][]).map(st => (
+                    <button
+                      key={st}
+                      onClick={() => { setSelectedStatus(st); setPage(0); router.replace(`/dashboard/agendamentos?status=${st}&scope=${scope}`); }}
+                      className={`text-xs px-3 py-1 rounded-full ${selectedStatus === st ? 'bg-orange-500 text-white' : 'text-gray-900 hover:bg-gray-100'}`}
+                    >
+                      {st === 'pending' ? 'Pendentes' : st === 'confirmed' ? 'Confirmados' : st === 'completed' ? 'Concluídos' : st === 'cancelled' ? 'Cancelados' : 'No-show'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => { setScope('upcoming'); setPage(0); }} className={`text-xs px-3 py-1 rounded-full ${scope === 'upcoming' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'}`}>Próximos</button>
+                <button onClick={() => { setScope('all'); setPage(0); }} className={`text-xs px-3 py-1 rounded-full ${scope === 'all' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'}`}>Todos</button>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              {Array.from(new Map(paged.items.map(a => [a.professional_id, a.professional_id])).keys()).filter(Boolean).map(pid => (
+                <span key={String(pid)} className="inline-flex items-center text-xs px-2 py-1 rounded-full border bg-white text-gray-900">
+                  <span className={`w-2 h-2 rounded-full mr-1 ${colorForId(String(pid))}`}></span>
+                  {professionals.find(p => p.id === pid)?.name || 'Profissional'}
+                </span>
+              ))}
+            </div>
+            {loading ? (
+              <p>Carregando...</p>
+            ) : paged.items.length === 0 ? (
+              <p>Sem agendamentos.</p>
+            ) : (
+              <div className="space-y-3">
+                {paged.items.map(app => (
+                  <div key={app.id} className="border rounded-xl p-3 flex items-center justify-between bg-white">
+                    <div>
+                      <div className="font-semibold text-gray-900">{app.customer_name}</div>
+                      <div className="text-sm text-gray-600">{new Date(app.appointment_date).toLocaleString()}</div>
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded-full border ${app.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' : app.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>{app.status}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center justify-between mt-4">
+              <button disabled={page===0} onClick={() => setPage(p => Math.max(0, p-1))} className="px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-900 hover:bg-gray-200 disabled:opacity-50">Anterior</button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.max(1, Math.ceil(paged.total / pageSize)) }, (_, i) => i).slice(Math.max(0, page-2), Math.max(0, page-2)+5).map(i => (
+                  <button key={i} onClick={() => setPage(i)} className={`px-2 py-1 text-xs rounded-full ${i === page ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'}`}>{i+1}</button>
+                ))}
+              </div>
+              <button disabled={(page+1) >= Math.ceil(paged.total / pageSize)} onClick={() => setPage(p => p+1)} className="px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-900 hover:bg-gray-200 disabled:opacity-50">Próximo</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

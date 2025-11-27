@@ -221,7 +221,7 @@ export default function Dashboard() {
 
         {(((role || '').toLowerCase() === 'admin') || (['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active')) && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border">
+          <div className="bg_white p-6 rounded-xl shadow-sm border">
               <div className="flex items-center justify-between mb-3">
                 <div className="bg-orange-50 p-2 rounded-md">
                   <BarChart3 className="w-5 h-5 text-orange-600" />
@@ -595,7 +595,7 @@ export default function Dashboard() {
             <p className="text-sm text-gray-600 mt-1">Agendamentos</p>
           </Link>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border">
+          <Link href="/dashboard/agendamentos?status=confirmed&scope=upcoming" className="bg-white p-6 rounded-xl shadow-sm border hover:border-orange-300 transition-colors">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-green-50 p-3 rounded-lg">
                 <CheckCircle className="w-6 h-6 text-green-600" />
@@ -604,7 +604,7 @@ export default function Dashboard() {
             </div>
             <h3 className="text-3xl font-bold text-gray-900">{stats.confirmedCount}</h3>
             <p className="text-sm text-gray-600 mt-1">Confirmados</p>
-          </div>
+          </Link>
 
           <Link href="/dashboard/profissionais" className="bg-white p-6 rounded-xl shadow-sm border hover:border-orange-300 transition-colors">
             <div className="flex items-center justify-between mb-4">
@@ -626,7 +626,7 @@ export default function Dashboard() {
                 <span className="text-sm font-semibold text-gray-900">Receita e CRM Financeiro</span>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex items-center bg-white border border-gray-200 rounded-full p-1">
+                <div className="flex items-center bg-white border border-gray-300 rounded-full p-1">
                   {([
                     { v: 'today', label: 'Hoje' },
                     { v: '7', label: '7d' },
@@ -641,7 +641,7 @@ export default function Dashboard() {
                     <button
                       key={opt.v}
                       onClick={() => { setSegPeriod(opt.v); if (typeof window !== 'undefined') window.localStorage.setItem('seg_period', opt.v); }}
-                      className={`text-xs px-3 py-1 rounded-full flex items-center gap-1 ${segPeriod === opt.v ? 'bg-orange-500 text-white shadow-sm' : 'text-gray-800 hover:bg-gray-100'}`}
+                      className={`text-xs px-3 py-1 rounded-full flex items-center gap-1 ${segPeriod === opt.v ? 'bg-orange-500 text-white shadow-sm' : 'text-gray-900 hover:bg-gray-100'}`}
                     >
                       {opt.v === 'today' ? <Clock className="w-3 h-3" /> : <BarChart3 className="w-3 h-3" />}
                       {opt.label}
@@ -760,7 +760,7 @@ export default function Dashboard() {
                 <p className="text-sm opacity-60">Sua agenda está livre por enquanto.</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                 {upcoming.map((app) => {
                   const date = new Date(app.appointment_date);
                   const service = services.find(s => s.id === app.service_id);
@@ -851,19 +851,19 @@ export default function Dashboard() {
       </div>
 
       {/* Notificações */}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
-        <div className="flex items-center justify-end mb-2">
-          <button onClick={() => setSoundEnabled(s => !s)} className="px-3 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">
+          <div className="fixed top-4 right-4 z-50 space-y-2">
+            <div className="flex items-center justify-end mb-2">
+          <button onClick={() => setSoundEnabled(s => !s)} className={`${soundEnabled ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} px-3 py-1 text-xs rounded-full`}>
             Som de lembretes: {soundEnabled ? 'Ativo' : 'Desativado'}
           </button>
-        </div>
-        {alerts.map(a => (
-          <div key={a.id} className="bg-orange-600 text-white px-4 py-2 rounded shadow">
-            <div className="font-semibold">Lembrete de agendamento</div>
-            <div className="text-sm">{a.title} às {a.time}</div>
+            </div>
+            {alerts.map(a => (
+              <div key={a.id} className="bg-orange-600 text-white px-4 py-2 rounded shadow">
+                <div className="font-semibold">Lembrete de agendamento</div>
+                <div className="text-sm">{a.title} às {a.time}</div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
       {/* Barra inferior com link público de agendamento */}
       <div className="border-t bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

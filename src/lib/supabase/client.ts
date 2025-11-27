@@ -100,6 +100,33 @@ export const db = {
     console.log('✅ Salão encontrado:', data?.name);
     return data;
   },
+  async getAppointmentsByStatusPaginated(
+    salonId: string,
+    status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show',
+    page: number,
+    pageSize: number,
+    scope: 'upcoming' | 'all' = 'upcoming'
+  ): Promise<{ items: Appointment[]; total: number }> {
+    const nowISO = new Date().toISOString();
+    let base = supabase
+      .from('appointments')
+      .select('*')
+      .eq('salon_id', salonId)
+      .eq('status', status)
+      .order('appointment_date', { ascending: true });
+    if (scope === 'upcoming') base = base.gte('appointment_date', nowISO);
+    const start = page * pageSize;
+    const end = start + pageSize - 1;
+    const { data: items, error } = await base.range(start, end);
+    const { count } = await supabase
+      .from('appointments')
+      .select('*', { count: 'exact', head: true })
+      .eq('salon_id', salonId)
+      .eq('status', status)
+      .gte('appointment_date', scope === 'upcoming' ? nowISO : '1970-01-01T00:00:00.000Z');
+    if (error) return { items: [], total: 0 };
+    return { items: (items || []) as Appointment[], total: count || 0 };
+  },
 
   // Buscar serviços
   async getServicesBySalonId(salonId: string): Promise<Service[]> {
@@ -309,7 +336,7 @@ export const db = {
     startOfMonth.setHours(0, 0, 0, 0);
     endOfMonth.setHours(23, 59, 59, 999);
 
-    const { data: apps, error: appsErr } = await this.client
+    const { data: apps, error: appsErr } = await supabase
       .from('appointments')
       .select('id, service_id, professional_id, status, appointment_date')
       .eq('salon_id', salonId)
@@ -322,8 +349,8 @@ export const db = {
     const professionalIds = Array.from(new Set((apps || []).map(a => a.professional_id).filter(Boolean)));
 
     const [{ data: services }, { data: pros }] = await Promise.all([
-      this.client.from('services').select('id, name, price').in('id', serviceIds),
-      this.client.from('professionals').select('id, name').in('id', professionalIds)
+      supabase.from('services').select('id, name, price').in('id', serviceIds),
+      supabase.from('professionals').select('id, name').in('id', professionalIds)
     ]);
 
     const priceByService = new Map<string, number>();
@@ -354,7 +381,7 @@ export const db = {
   },
 
   async getRevenueBreakdownRange(salonId: string, startISO: string, endISO: string) {
-    const { data: apps, error: appsErr } = await this.client
+    const { data: apps, error: appsErr } = await supabase
       .from('appointments')
       .select('id, service_id, professional_id, status, appointment_date')
       .eq('salon_id', salonId)
@@ -367,8 +394,8 @@ export const db = {
     const professionalIds = Array.from(new Set((apps || []).map(a => a.professional_id).filter(Boolean)));
 
     const [{ data: services }, { data: pros }] = await Promise.all([
-      this.client.from('services').select('id, name, price').in('id', serviceIds),
-      this.client.from('professionals').select('id, name').in('id', professionalIds)
+      supabase.from('services').select('id, name, price').in('id', serviceIds),
+      supabase.from('professionals').select('id, name').in('id', professionalIds)
     ]);
 
     const priceByService = new Map<string, number>();
@@ -404,7 +431,7 @@ export const db = {
     endISO: string,
     opts?: { professionalId?: string; serviceId?: string }
   ) {
-    let q = this.client
+    let q = supabase
       .from('appointments')
       .select('id, service_id, professional_id, status, appointment_date')
       .eq('salon_id', salonId)
@@ -420,8 +447,8 @@ export const db = {
     const professionalIds = Array.from(new Set((apps || []).map(a => a.professional_id).filter(Boolean)));
 
     const [{ data: services }, { data: pros }] = await Promise.all([
-      this.client.from('services').select('id, name, price').in('id', serviceIds),
-      this.client.from('professionals').select('id, name').in('id', professionalIds)
+      supabase.from('services').select('id, name, price').in('id', serviceIds),
+      supabase.from('professionals').select('id, name').in('id', professionalIds)
     ]);
 
     const priceByService = new Map<string, number>();
