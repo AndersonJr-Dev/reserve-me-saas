@@ -178,16 +178,48 @@ export default function ProfissionaisPage() {
 
   const saveHours = async (id: string) => {
     try {
+      // Buscar horário do salão para validar
+      let salonHours: Record<string, { open?: string; close?: string; closed?: boolean }> | null = null;
+      try {
+        const res = await fetch('/api/dashboard/settings', { credentials: 'include' });
+        const json = await res.json();
+        if (res.ok && json?.salon?.working_hours) salonHours = json.salon.working_hours;
+      } catch {}
+
+      let adjusted = false;
+      const normalized = Object.fromEntries(Object.entries(hoursDraft).map(([day, conf]) => {
+        const salonDay = salonHours ? salonHours[day as keyof typeof salonHours] : undefined;
+        if (!conf?.isOpen) return [day, { isOpen: false }];
+        const open = conf.open || '09:00';
+        const close = conf.close || '18:00';
+        let finalOpen = open;
+        let finalClose = close;
+        if (salonDay) {
+          const salonClosed = !!salonDay.closed;
+          if (salonClosed) {
+            adjusted = true;
+            return [day, { isOpen: false }];
+          }
+          const sOpen = salonDay.open || '09:00';
+          const sClose = salonDay.close || '18:00';
+          if (open < sOpen) { finalOpen = sOpen; adjusted = true; }
+          if (close > sClose) { finalClose = sClose; adjusted = true; }
+          if (finalClose <= finalOpen) { adjusted = true; return [day, { isOpen: false }]; }
+        }
+        return [day, { isOpen: true, open: finalOpen, close: finalClose }];
+      })) as Record<string, { isOpen: boolean; open?: string; close?: string }>;
+
       const res = await fetch('/api/dashboard/professionals', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ id, name: professionals.find(x => x.id === id)?.name || '', working_hours: hoursDraft })
+        body: JSON.stringify({ id, name: professionals.find(x => x.id === id)?.name || '', working_hours: normalized })
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error || 'Erro ao salvar horários');
       setProfessionals(p => p.map(x => x.id === id ? json.professional : x));
       setEditingHoursId(null);
+      if (adjusted) alert('Alguns horários foram ajustados para respeitar o funcionamento do salão.');
     } catch (err) {
       alert(err instanceof Error ? err.message : String(err));
     }

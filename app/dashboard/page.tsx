@@ -622,7 +622,17 @@ export default function Dashboard() {
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Equipe</span>
             </div>
             <h3 className="text-3xl font-bold text-gray-900">{stats.professionalsCount}</h3>
-            <p className="text-sm text-gray-600 mt-1">Profissionais ativos</p>
+            <p className="text-sm text-black mt-1">Profissionais ativos</p>
+          </Link>
+          <Link href="/planos" className="bg-gradient-to-r from-orange-500 to-red-500 p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow text-white">
+            <div className="flex items-center justify-between mb-4">
+              <div className="bg-white/20 p-3 rounded-lg">
+                <Settings className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xs font-semibold uppercase tracking-wider">Upgrade</span>
+            </div>
+            <h3 className="text-2xl font-bold">Fazer upgrade de plano</h3>
+            <p className="text-sm mt-1">Desbloqueie recursos avançados</p>
           </Link>
 
           <div className="bg-white p-6 rounded-xl shadow-sm border lg:col-span-2">
@@ -681,30 +691,36 @@ export default function Dashboard() {
             {(((role || '').toLowerCase() === 'admin') || (['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active')) ? (
               <div className="grid lg:grid-cols-3 gap-6">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Top Serviços</h3>
+                  <h3 className="text-sm font-semibold text-black mb-2">Top Serviços</h3>
                   <div className="space-y-2">
-                    {topServices.length === 0 ? <p className="text-sm text-gray-500">Sem dados</p> : topServices.map(s => (
+                    {topServices.length === 0 ? <p className="text-sm text-black">Sem dados</p> : topServices.map(s => (
                       <div key={s.name} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-700">{s.name}</span>
-                        <span className="font-semibold text-gray-900">R$ {s.amount.toFixed(2)}</span>
+                        <span className="text-black">{s.name}</span>
+                        <span className="font-semibold text-black">R$ {s.amount.toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Top Profissionais</h3>
+                  <h3 className="text-sm font-semibold text-black mb-2">Top Profissionais</h3>
                   <div className="space-y-2">
-                    {topProfessionals.length === 0 ? <p className="text-sm text-gray-500">Sem dados</p> : topProfessionals.map(p => (
+                    {topProfessionals.length === 0 ? <p className="text-sm text-black">Sem dados</p> : topProfessionals.map(p => (
                       <div key={p.name} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-700">{p.name}</span>
-                        <span className="font-semibold text-gray-900">R$ {p.amount.toFixed(2)}</span>
+                        <span className="text-black">{p.name}</span>
+                        <span className="font-semibold text-black">R$ {p.amount.toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Ações</h3>
-                  <div className="flex gap-2">
+                  <h3 className="text-sm font-semibold text-black mb-2">Ações</h3>
+                  <div className="flex gap-2 items-center flex-wrap">
+                    <span className="px-3 py-2 border rounded-md bg-white text-black">
+                      Total do período: R$ {(topServices.reduce((acc, s) => acc + s.amount, 0)).toFixed(2)}
+                    </span>
+                    <span className="px-3 py-2 border rounded-md bg-white text-black">
+                      Total por profissionais: R$ {(topProfessionals.reduce((acc, p) => acc + p.amount, 0)).toFixed(2)}
+                    </span>
                     <button
                       onClick={() => {
                         const name = `crm_${segPeriod}_${new Date().toISOString().slice(0,10)}.csv`;
@@ -829,7 +845,7 @@ export default function Dashboard() {
                         )}
                         <button
                           disabled={app.status === 'confirmed'}
-                          className={`px-4 py-2 text-xs font-semibold rounded-full flex items-center ${app.status === 'confirmed' ? 'bg-green-600 text-white cursor-default' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                          className={`px-4 py-2 text-xs font-semibold rounded-full flex items-center ${app.status === 'confirmed' ? 'bg-green-600 text-white cursor-default' : 'bg-orange-500 text-white hover:bg-orange-600'}`}
                           onClick={async () => {
                             if (app.status === 'confirmed') return;
                             try {

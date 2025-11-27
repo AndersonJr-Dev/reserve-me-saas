@@ -154,8 +154,8 @@ export default function AgendamentosClient() {
                 {selectedApps.map(app => (
                   <div key={app.id} className="border rounded-xl p-3 flex items-center justify-between bg-white">
                     <div>
-                      <div className="font-semibold text-gray-900">{app.customer_name}</div>
-                      <div className="text-sm text-gray-600">{new Date(app.appointment_date).toLocaleString()}</div>
+                      <div className="font-semibold text-black">{app.customer_name}</div>
+                      <div className="text-sm text-black">{new Date(app.appointment_date).toLocaleString()}</div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`text-xs px-2 py-1 rounded-full border ${app.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' : app.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>{app.status}</span>
@@ -178,7 +178,7 @@ export default function AgendamentosClient() {
                             alert(err instanceof Error ? err.message : String(err));
                           }
                         }}
-                        className={`px-3 py-1 text-xs rounded-full ${app.status === 'confirmed' ? 'bg-green-600 text-white cursor-default' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                        className={`px-3 py-1 text-xs rounded-full ${app.status === 'confirmed' ? 'bg-green-600 text-white cursor-default' : 'bg-orange-500 text-white hover:bg-orange-600'}`}
                       >
                         {app.status === 'confirmed' ? 'Confirmado' : 'Confirmar'}
                       </button>
@@ -228,8 +228,8 @@ export default function AgendamentosClient() {
                 {paged.items.map(app => (
                   <div key={app.id} className="border rounded-xl p-3 flex items-center justify-between bg-white">
                     <div>
-                      <div className="font-semibold text-gray-900">{app.customer_name}</div>
-                      <div className="text-sm text-gray-600">{new Date(app.appointment_date).toLocaleString()}</div>
+                      <div className="font-semibold text-black">{app.customer_name}</div>
+                      <div className="text-sm text-black">{new Date(app.appointment_date).toLocaleString()}</div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`text-xs px-2 py-1 rounded-full border ${app.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' : app.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>{app.status}</span>
@@ -252,7 +252,7 @@ export default function AgendamentosClient() {
                             alert(err instanceof Error ? err.message : String(err));
                           }
                         }}
-                        className={`px-3 py-1 text-xs rounded-full ${app.status === 'confirmed' ? 'bg-green-600 text-white cursor-default' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                        className={`px-3 py-1 text-xs rounded-full ${app.status === 'confirmed' ? 'bg-green-600 text-white cursor-default' : 'bg-orange-500 text-white hover:bg-orange-600'}`}
                       >
                         {app.status === 'confirmed' ? 'Confirmado' : 'Confirmar'}
                       </button>

@@ -17,7 +17,8 @@ function generateSlotsForDate(date: Date, workingHours: any, intervalMinutes: nu
   const config = workingHours[dayKey];
 
   // Se não tiver configuração para esse dia ou estiver fechado
-  if (!config || !config.isOpen) {
+  const isClosed = typeof config?.closed === 'boolean' ? config.closed : !config?.isOpen;
+  if (!config || isClosed) {
     return [];
   }
 
@@ -25,11 +26,23 @@ function generateSlotsForDate(date: Date, workingHours: any, intervalMinutes: nu
   const [openH, openM] = (config.open || "09:00").split(':').map(Number);
   const [closeH, closeM] = (config.close || "18:00").split(':').map(Number);
 
-  const current = new Date(date);
+  let current = new Date(date);
   current.setHours(openH, openM, 0, 0);
 
   const end = new Date(date);
   end.setHours(closeH, closeM, 0, 0);
+
+  // Remove horários já passados se for hoje
+  const now = new Date();
+  const isToday = now.toDateString() === date.toDateString();
+  if (isToday) {
+    // Avança current para o próximo slot futuro
+    const next = new Date(now);
+    next.setMinutes(now.getMinutes() + (intervalMinutes - (now.getMinutes() % intervalMinutes)) % intervalMinutes);
+    if (next > current) current = next;
+    // Se já passou do fechamento, não há horários
+    if (current >= end) return [];
+  }
 
   while (current < end) {
     const timeString = current.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
