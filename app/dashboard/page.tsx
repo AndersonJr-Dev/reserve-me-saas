@@ -31,6 +31,7 @@ export default function Dashboard() {
   const [salonSlug, setSalonSlug] = useState<string | null>(null);
   const [planType, setPlanType] = useState<string | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [waTemplate, setWaTemplate] = useState<string | null>(null);
@@ -57,7 +58,9 @@ export default function Dashboard() {
   useEffect(() => {
     const refetchBreakdown = async () => {
       if (!salonId) return;
-      if (!(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active')) return;
+      const isAdmin = (role || '').toLowerCase() === 'admin';
+      const hasPaidPlan = ['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active';
+      if (!isAdmin && !hasPaidPlan) return;
       let breakdown;
       if (segPeriod === 'month') {
         breakdown = await db.getRevenueBreakdownMonthly(salonId);
@@ -73,7 +76,7 @@ export default function Dashboard() {
       setTopProfessionals((breakdown?.professionals || []).slice(0, 5));
     };
     refetchBreakdown();
-  }, [segPeriod, planType, subscriptionStatus, salonId]);
+  }, [segPeriod, planType, subscriptionStatus, salonId, role]);
 
   const supabase = createClientComponentClient();
 
@@ -93,6 +96,7 @@ export default function Dashboard() {
         const finalPlanType: string | null = meJson?.user?.planType ?? null;
         const finalSubscriptionStatus: string | null = meJson?.user?.subscriptionStatus ?? null;
         const finalUserName: string | null = meJson?.user?.name ?? null;
+        const finalRole: string | null = meJson?.user?.role ?? null;
 
         if (!finalSalonId) {
           console.error('ERRO: Salão não encontrado para este usuário.');
@@ -105,6 +109,7 @@ export default function Dashboard() {
         setPlanType(finalPlanType);
         setSubscriptionStatus(finalSubscriptionStatus);
         setUserName(finalUserName);
+        setRole(finalRole);
         try {
           const res = await fetch('/api/dashboard/settings', { credentials: 'include' });
           const json = await res.json();
@@ -158,7 +163,7 @@ export default function Dashboard() {
           <p className="text-sm font-medium text-gray-500 animate-pulse">Carregando Reserve.me...</p>
         </div>
 
-        {(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') && (
+        {(((role || '').toLowerCase() === 'admin') || (['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active')) && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
             <div className="bg-white p-6 rounded-xl shadow-sm border">
               <div className="flex items-center justify-between mb-3">
@@ -203,7 +208,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') && (
+        {(((role || '').toLowerCase() === 'admin') || (['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active')) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             <div className="bg-white p-6 rounded-xl shadow-sm border">
               <div className="flex items-center justify-between mb-4">

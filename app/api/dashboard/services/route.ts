@@ -38,7 +38,7 @@ export async function GET() {
     // Buscar dados do usuário para pegar o salon_id
     const { data: userData } = await supabaseService
       .from('users')
-      .select('salon_id')
+      .select('salon_id, role')
       .eq('id', user.id)
       .single();
 
@@ -118,9 +118,11 @@ export async function POST(request: NextRequest) {
       ? (salonData.subscription_status as string | null) || 'inactive'
       : 'inactive';
     const isPaidPlanActive = subscriptionStatus === 'active' && currentPlan !== 'free';
-    const allowedServices = isPaidPlanActive
-      ? (MAX_SERVICES_BY_PLAN[currentPlan] ?? MAX_SERVICES_BY_PLAN.premium)
-      : MAX_SERVICES_BY_PLAN.free;
+    const allowedServices = (userData?.role === 'admin')
+      ? Number.POSITIVE_INFINITY
+      : (isPaidPlanActive
+          ? (MAX_SERVICES_BY_PLAN[currentPlan] ?? MAX_SERVICES_BY_PLAN.premium)
+          : MAX_SERVICES_BY_PLAN.free);
 
     const { count: servicesCount } = await supabaseService
       .from('services')
