@@ -71,12 +71,12 @@ export default function Dashboard() {
         breakdown = await db.getRevenueBreakdownMonthly(salonId);
       } else {
         const now = new Date();
-        const endISO = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
-        const start = new Date(now);
-        const days = segPeriod === 'today' ? 0 : segPeriod === '7' ? 6 : segPeriod === '30' ? 29 : segPeriod === '90' ? 89 : segPeriod === '120' ? 119 : 29;
-        start.setDate(start.getDate() - days);
-        start.setHours(0,0,0,0);
-        breakdown = await db.getRevenueBreakdownRangeFiltered(salonId, start.toISOString(), endISO, {
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        const days = segPeriod === 'today' ? 0 : segPeriod === '7' ? 7 : segPeriod === '30' ? 30 : segPeriod === '90' ? 90 : segPeriod === '120' ? 120 : 30;
+        const end = new Date(start);
+        end.setDate(end.getDate() + days);
+        end.setHours(23,59,59,999);
+        breakdown = await db.getRevenueBreakdownRangeFiltered(salonId, start.toISOString(), end.toISOString(), {
           professionalId: segProId || undefined,
           serviceId: segServiceId || undefined
         });
@@ -579,7 +579,15 @@ export default function Dashboard() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <button
+              onClick={() => setSoundEnabled(s => !s)}
+              className={`${soundEnabled ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} px-3 py-1 text-xs rounded-full`}
+            >
+              Som de lembretes: {soundEnabled ? 'Ativo' : 'Desativado'}
+            </button>
+          </div>
         </div>
       
         {/* Cards de Estatísticas */}
@@ -852,11 +860,6 @@ export default function Dashboard() {
 
       {/* Notificações */}
           <div className="fixed bottom-4 right-4 z-50 space-y-2">
-            <div className="flex items-center justify-end mb-2">
-          <button onClick={() => setSoundEnabled(s => !s)} className={`${soundEnabled ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} px-3 py-1 text-xs rounded-full`}>
-            Som de lembretes: {soundEnabled ? 'Ativo' : 'Desativado'}
-          </button>
-            </div>
             {alerts.map(a => (
               <div key={a.id} className="bg-orange-600 text-white px-4 py-2 rounded shadow">
                 <div className="font-semibold">Lembrete de agendamento</div>
