@@ -477,6 +477,37 @@ export const db = {
 
     return { services: servicesOut, professionals: professionalsOut };
   },
+  async getRevenueAggregateRangeFiltered(
+    salonId: string,
+    startISO: string,
+    endISO: string,
+    opts?: { professionalId?: string; serviceId?: string }
+  ) {
+    let q = supabase
+      .from('appointments')
+      .select('id, service_id, professional_id, status, appointment_date')
+      .eq('salon_id', salonId)
+      .in('status', ['confirmed', 'completed'])
+      .gte('appointment_date', startISO)
+      .lte('appointment_date', endISO);
+    if (opts?.professionalId) q = q.eq('professional_id', opts.professionalId);
+    if (opts?.serviceId) q = q.eq('service_id', opts.serviceId);
+    const { data: apps, error: appsErr } = await q;
+    if (appsErr) return { total: 0, count: 0 };
+
+    const serviceIds = Array.from(new Set((apps || []).map(a => a.service_id).filter(Boolean)));
+    const { data: services } = await supabase
+      .from('services')
+      .select('id, price')
+      .in('id', serviceIds.length ? serviceIds : ['__none__']);
+
+    const priceByService = new Map<string, number>();
+    (services || []).forEach(s => { priceByService.set(s.id, Number(s.price) || 0); });
+
+    const total = (apps || []).reduce((acc, a) => acc + (priceByService.get(a.service_id) || 0), 0);
+    const count = (apps || []).length;
+    return { total, count };
+  },
   // Criar agendamento
   async createAppointment(appointmentData: CreateAppointmentInput): Promise<Appointment | null> {
     const { data, error } = await supabase

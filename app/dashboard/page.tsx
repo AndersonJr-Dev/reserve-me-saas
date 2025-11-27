@@ -39,6 +39,8 @@ export default function Dashboard() {
   const [topProfessionals, setTopProfessionals] = useState<{ name: string; amount: number }[]>([]);
   const [segProId, setSegProId] = useState<string>('');
   const [segServiceId, setSegServiceId] = useState<string>('');
+  const [periodTotal, setPeriodTotal] = useState<number>(0);
+  const [periodCount, setPeriodCount] = useState<number>(0);
   const [alerts, setAlerts] = useState<{ id: string; title: string; time: string }[]>([]);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [alertedIds, setAlertedIds] = useState<Set<string>>(new Set());
@@ -67,7 +69,14 @@ export default function Dashboard() {
       const hasPaidPlan = ['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active';
       if (!isAdmin && !hasPaidPlan) return;
       let breakdown;
+      let startISO: string;
+      let endISO: string;
       if (segPeriod === 'month') {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        startISO = start.toISOString();
+        endISO = end.toISOString();
         breakdown = await db.getRevenueBreakdownMonthly(salonId);
       } else {
         const now = new Date();
@@ -76,13 +85,21 @@ export default function Dashboard() {
         const end = new Date(start);
         end.setDate(end.getDate() + days);
         end.setHours(23,59,59,999);
-        breakdown = await db.getRevenueBreakdownRangeFiltered(salonId, start.toISOString(), end.toISOString(), {
+        startISO = start.toISOString();
+        endISO = end.toISOString();
+        breakdown = await db.getRevenueBreakdownRangeFiltered(salonId, startISO, endISO, {
           professionalId: segProId || undefined,
           serviceId: segServiceId || undefined
         });
       }
       setTopServices((breakdown?.services || []).slice(0, 5));
       setTopProfessionals((breakdown?.professionals || []).slice(0, 5));
+      const agg = await db.getRevenueAggregateRangeFiltered(salonId, startISO!, endISO!, {
+        professionalId: segProId || undefined,
+        serviceId: segServiceId || undefined
+      });
+      setPeriodTotal(agg.total || 0);
+      setPeriodCount(agg.count || 0);
     };
     refetchBreakdown();
   }, [segPeriod, segProId, segServiceId, planType, subscriptionStatus, salonId, role]);
@@ -562,6 +579,7 @@ export default function Dashboard() {
               <button
                 onClick={async () => {
                   try {
+                    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
                     await supabase.auth.signOut();
                   } finally {
                     window.location.href = '/login';
@@ -711,16 +729,26 @@ export default function Dashboard() {
                       </div>
                     ))}
                   </div>
+                  {topProfessionals.length > 0 && (
+                    <div className="mt-3 pt-2 border-t space-y-1 text-sm">
+                      <div className="flex justify-end items-center">
+                        <span className="text-gray-600 mr-2">Total:</span>
+                        <span className="text-gray-900 font-bold">R$ {Number(topProfessionals.reduce((acc, p) => acc + p.amount, 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-end items-center">
+                        <span className="text-gray-600 mr-2">Total do período completo:</span>
+                        <span className="text-gray-900 font-bold">R$ {Number(periodTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-end items-center">
+                        <span className="text-gray-600 mr-2">Ticket médio:</span>
+                        <span className="text-gray-900 font-bold">{periodCount > 0 ? `R$ ${Number(periodTotal / periodCount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-black mb-2">Ações</h3>
                   <div className="flex gap-2 items-center flex-wrap">
-                    <span className="px-3 py-2 border rounded-md bg-white text-black">
-                      Total do período: R$ {(topServices.reduce((acc, s) => acc + s.amount, 0)).toFixed(2)}
-                    </span>
-                    <span className="px-3 py-2 border rounded-md bg-white text-black">
-                      Total por profissionais: R$ {(topProfessionals.reduce((acc, p) => acc + p.amount, 0)).toFixed(2)}
-                    </span>
                     <button
                       onClick={() => {
                         const name = `crm_${segPeriod}_${new Date().toISOString().slice(0,10)}.csv`;

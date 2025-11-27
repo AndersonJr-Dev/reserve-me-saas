@@ -10,48 +10,9 @@ O sistema é simples, direto ao ponto e focado em resolver o problema real: faze
 
 ## Configuração do Stripe
 
-### 1. Criar conta e produtos
-- Crie uma conta no [Stripe](https://dashboard.stripe.com/register)
-- Cadastre os três planos de assinatura e copie os IDs de preço (price_xxx)
-- Opcional: configure produtos únicos para serviços avulsos
+Integração Stripe em produção: consultar documentação interna de operação.
 
-### 2. Variáveis de ambiente
-Atualize `.env.local` com:
-
-```env
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test...
-STRIPE_SECRET_KEY=sk_test...
-STRIPE_WEBHOOK_SECRET=whsec...
-STRIPE_PRICE_BASIC=price_...
-STRIPE_PRICE_ADVANCED=price_...
-STRIPE_PRICE_PREMIUM=price_...
-NEXT_PUBLIC_BASE_URL=https://seu-dominio.com
-```
-
-### 3. Webhook
-No Stripe:
-- Em **Developers > Webhooks**, crie um endpoint para `https://seu-dominio.com/api/payment/webhook`
-- Selecione os eventos `checkout.session.completed`, `checkout.session.async_payment_succeeded` e `checkout.session.async_payment_failed`
-- Copie o `Signing secret (whsec_xxx)` e coloque em `STRIPE_WEBHOOK_SECRET`
-
-Em desenvolvimento, use:
-
-```bash
-stripe listen --forward-to http://localhost:3000/api/payment/webhook
-```
-
-### 4. Atualizar Banco de Dados
-Execute o SQL no Supabase:
-
-```sql
--- Adicionar campos de pagamento
-ALTER TABLE public.appointments 
-ADD COLUMN IF NOT EXISTS payment_id TEXT,
-ADD COLUMN IF NOT EXISTS payment_status TEXT,
-ADD COLUMN IF NOT EXISTS payment_amount DECIMAL(10,2),
-ADD COLUMN IF NOT EXISTS payment_method TEXT,
-ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
-```
+(link interno será adicionado quando disponível)
 
 ## Como Usar o Sistema de Pagamento
 
@@ -74,11 +35,13 @@ ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
 
 **Gestão de Serviços** – Cadastro de serviços com preço e duração, limitado por plano.
 
-**Métricas de Receita (Planos Pagos)** – Visual de receita diária/semanal/mensal no dashboard.
+**Métricas de Receita (Planos Pagos)** – Visual de receita diária/semanal/mensal no dashboard, com exportação CSV.
 
 **Link Personalizado** – Cada estabelecimento ganha seu próprio link público de agendamento.
 
 **WhatsApp de Confirmação** – Botão de WhatsApp com template personalizável para confirmar presença (envio manual pelo usuário). Não há disparo automático neste momento.
+
+**Checkout Seguro (Stripe)** – Pagamentos de serviços e assinaturas com atualização automática do status.
 
 ## Tecnologias que Usei
 
@@ -167,7 +130,7 @@ reserve-me-saas/
 ├── src/lib/supabase/        # Cliente do Supabase
 ├── components/              # Componentes reutilizáveis
 ├── public/                  # Arquivos estáticos
-└── CONFIGURACAO-SUPABASE.md # Instruções do banco
+└── ...
 ```
 
 ## Scripts Disponíveis
@@ -175,13 +138,10 @@ reserve-me-saas/
 - `npm run dev` - Inicia em modo desenvolvimento
 - `npm run build` - Gera build de produção
 - `npm run start` - Roda o build de produção
-- `npm run lint` - Verifica erros de código
 
 ## Deploy na Vercel
 
-A forma mais fácil de fazer deploy é na Vercel. Criei um documento detalhado em `DEPLOY-VERCEL.md` explicando passo a passo.
-
-Resumindo: conecta o GitHub, configura as variáveis de ambiente e pronto. Toda vez que fizer push na main, atualiza automaticamente.
+A forma mais fácil de fazer deploy é na Vercel: conecte o GitHub, configure as variáveis de ambiente e a plataforma cuida dos builds. Toda vez que fizer push na `main`, atualiza automaticamente.
 
 ## Licença
 

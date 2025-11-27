@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Calendar, Users, Clock, CheckCircle, Star, ArrowRight, Phone, Mail, MapPin } from 'lucide-react';
+import { Calendar, Users, Clock, CheckCircle, Star, ArrowRight, Phone, Mail, MapPin, BarChart3, CreditCard, Scissors } from 'lucide-react';
 
 import PlanSubscribeButton from './components/plan-subscribe-button';
 
@@ -141,6 +141,36 @@ export default function HomePage() {
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Integração WhatsApp</h3>
               <p className="text-gray-600">
                 Botão de WhatsApp com mensagem personalizada para confirmações e contato direto com clientes.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 p-8 rounded-xl hover:shadow-lg transition-shadow">
+              <div className="bg-orange-500 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
+                <Scissors className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Gestão de Serviços</h3>
+              <p className="text-gray-600">
+                Cadastre serviços com preço e duração, organize sua oferta por plano.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 p-8 rounded-xl hover:shadow-lg transition-shadow">
+              <div className="bg-orange-500 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
+                <BarChart3 className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Métricas de Receita/CRM</h3>
+              <p className="text-gray-600">
+                Acompanhe receita diária, semanal e mensal; exporte dados em CSV.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 p-8 rounded-xl hover:shadow-lg transition-shadow">
+              <div className="bg-orange-500 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
+                <CreditCard className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Checkout Seguro</h3>
+              <p className="text-gray-600">
+                Pagamentos e assinaturas via Stripe com atualizações automáticas no painel.
               </p>
             </div>
           </div>
