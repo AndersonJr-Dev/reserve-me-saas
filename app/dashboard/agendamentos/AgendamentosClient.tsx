@@ -157,7 +157,32 @@ export default function AgendamentosClient() {
                       <div className="font-semibold text-gray-900">{app.customer_name}</div>
                       <div className="text-sm text-gray-600">{new Date(app.appointment_date).toLocaleString()}</div>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full border ${app.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' : app.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>{app.status}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded-full border ${app.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' : app.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>{app.status}</span>
+                      <button
+                        disabled={app.status === 'confirmed'}
+                        onClick={async () => {
+                          if (app.status === 'confirmed') return;
+                          try {
+                            const res = await fetch('/api/dashboard/appointments', {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              credentials: 'include',
+                              body: JSON.stringify({ id: app.id, status: 'confirmed' })
+                            });
+                            const json = await res.json().catch(() => ({}));
+                            if (!res.ok) throw new Error(json?.error || 'Erro ao confirmar');
+                            const updated = json.appointment as Appointment;
+                            setMonthApps(prev => prev.map(x => x.id === app.id ? { ...x, status: updated.status } : x));
+                          } catch (err) {
+                            alert(err instanceof Error ? err.message : String(err));
+                          }
+                        }}
+                        className={`px-3 py-1 text-xs rounded-full ${app.status === 'confirmed' ? 'bg-green-600 text-white cursor-default' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                      >
+                        {app.status === 'confirmed' ? 'Confirmado' : 'Confirmar'}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -206,7 +231,32 @@ export default function AgendamentosClient() {
                       <div className="font-semibold text-gray-900">{app.customer_name}</div>
                       <div className="text-sm text-gray-600">{new Date(app.appointment_date).toLocaleString()}</div>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full border ${app.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' : app.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>{app.status}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded-full border ${app.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' : app.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>{app.status}</span>
+                      <button
+                        disabled={app.status === 'confirmed'}
+                        onClick={async () => {
+                          if (app.status === 'confirmed') return;
+                          try {
+                            const res = await fetch('/api/dashboard/appointments', {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              credentials: 'include',
+                              body: JSON.stringify({ id: app.id, status: 'confirmed' })
+                            });
+                            const json = await res.json().catch(() => ({}));
+                            if (!res.ok) throw new Error(json?.error || 'Erro ao confirmar');
+                            const updated = json.appointment as Appointment;
+                            setPaged(prev => ({ items: prev.items.map(x => x.id === app.id ? { ...x, status: updated.status } : x), total: prev.total }));
+                          } catch (err) {
+                            alert(err instanceof Error ? err.message : String(err));
+                          }
+                        }}
+                        className={`px-3 py-1 text-xs rounded-full ${app.status === 'confirmed' ? 'bg-green-600 text-white cursor-default' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                      >
+                        {app.status === 'confirmed' ? 'Confirmado' : 'Confirmar'}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

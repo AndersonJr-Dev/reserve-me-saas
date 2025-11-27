@@ -283,8 +283,8 @@ export default function ProfissionaisPage() {
                         {p.photo_url ? <img src={p.photo_url} className="w-full h-full object-cover" alt={p.name} /> : <User className="w-8 h-8 text-gray-400 m-3" />}
                       </div>
                       <div>
-                        <div className="font-semibold">{p.name}</div>
-                        <div className="text-sm text-gray-600">{p.specialty}</div>
+                        <div className="font-semibold text-gray-900">{p.name}</div>
+                        <div className="text-sm text-gray-700">{p.specialty}</div>
                       </div>
                     </div>
                     <div className="mt-4 flex space-x-2">

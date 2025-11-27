@@ -851,7 +851,7 @@ export default function Dashboard() {
       </div>
 
       {/* Notificações */}
-          <div className="fixed top-4 right-4 z-50 space-y-2">
+          <div className="fixed bottom-4 right-4 z-50 space-y-2">
             <div className="flex items-center justify-end mb-2">
           <button onClick={() => setSoundEnabled(s => !s)} className={`${soundEnabled ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} px-3 py-1 text-xs rounded-full`}>
             Som de lembretes: {soundEnabled ? 'Ativo' : 'Desativado'}
