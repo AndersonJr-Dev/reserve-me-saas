@@ -37,6 +37,8 @@ export default function Dashboard() {
   const [waTemplate, setWaTemplate] = useState<string | null>(null);
   const [topServices, setTopServices] = useState<{ name: string; amount: number }[]>([]);
   const [topProfessionals, setTopProfessionals] = useState<{ name: string; amount: number }[]>([]);
+  const [segProId, setSegProId] = useState<string>('');
+  const [segServiceId, setSegServiceId] = useState<string>('');
   const [alerts, setAlerts] = useState<{ id: string; title: string; time: string }[]>([]);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [alertedIds, setAlertedIds] = useState<Set<string>>(new Set());
@@ -74,13 +76,16 @@ export default function Dashboard() {
         const days = segPeriod === 'today' ? 0 : segPeriod === '7' ? 6 : segPeriod === '30' ? 29 : segPeriod === '90' ? 89 : segPeriod === '120' ? 119 : 29;
         start.setDate(start.getDate() - days);
         start.setHours(0,0,0,0);
-        breakdown = await db.getRevenueBreakdownRange(salonId, start.toISOString(), endISO);
+        breakdown = await db.getRevenueBreakdownRangeFiltered(salonId, start.toISOString(), endISO, {
+          professionalId: segProId || undefined,
+          serviceId: segServiceId || undefined
+        });
       }
       setTopServices((breakdown?.services || []).slice(0, 5));
       setTopProfessionals((breakdown?.professionals || []).slice(0, 5));
     };
     refetchBreakdown();
-  }, [segPeriod, planType, subscriptionStatus, salonId, role]);
+  }, [segPeriod, segProId, segServiceId, planType, subscriptionStatus, salonId, role]);
 
   useEffect(() => {
     const playBeep = () => {
@@ -635,6 +640,26 @@ export default function Dashboard() {
                   {(((role || '').toLowerCase() === 'admin') || ((planType || '').toLowerCase() === 'premium' && subscriptionStatus === 'active')) && (
                     <option value="120">Últimos 120 dias</option>
                   )}
+                </select>
+                <select
+                  value={segProId}
+                  onChange={(e) => setSegProId(e.target.value)}
+                  className="text-xs px-2 py-1 border rounded-md bg-white"
+                >
+                  <option value="">Todos os profissionais</option>
+                  {professionals.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <select
+                  value={segServiceId}
+                  onChange={(e) => setSegServiceId(e.target.value)}
+                  className="text-xs px-2 py-1 border rounded-md bg-white"
+                >
+                  <option value="">Todos os serviços</option>
+                  {services.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
                 </select>
               </div>
             </div>
