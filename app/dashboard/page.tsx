@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Calendar, Users, CheckCircle, BarChart3, Clock, Settings, PlusCircle, ArrowRight, LogOut, Phone } from 'lucide-react';
+import { Calendar, Users, CheckCircle, BarChart3, Clock, Settings, PlusCircle, LogOut, Phone } from 'lucide-react';
 
 // CORREÇÃO DE IMPORTAÇÃO (ESTRUTURA: app/dashboard -> src/lib):
 // ../.. volta para a raiz do projeto
@@ -625,8 +625,8 @@ export default function Dashboard() {
                 </div>
                 <span className="text-sm font-semibold text-gray-900">Receita e CRM Financeiro</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center bg-gray-50 border rounded-full p-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center bg-white border border-gray-200 rounded-full p-1">
                   {([
                     { v: 'today', label: 'Hoje' },
                     { v: '7', label: '7d' },
@@ -641,7 +641,7 @@ export default function Dashboard() {
                     <button
                       key={opt.v}
                       onClick={() => { setSegPeriod(opt.v); if (typeof window !== 'undefined') window.localStorage.setItem('seg_period', opt.v); }}
-                      className={`text-xs px-3 py-1 rounded-full flex items-center gap-1 ${segPeriod === opt.v ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:bg-white'}`}
+                      className={`text-xs px-3 py-1 rounded-full flex items-center gap-1 ${segPeriod === opt.v ? 'bg-orange-500 text-white shadow-sm' : 'text-gray-800 hover:bg-gray-100'}`}
                     >
                       {opt.v === 'today' ? <Clock className="w-3 h-3" /> : <BarChart3 className="w-3 h-3" />}
                       {opt.label}
@@ -730,16 +730,16 @@ export default function Dashboard() {
         {/* Toolbar superior */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Link href="/dashboard/servicos" className="inline-flex items-center gap-2 px-3 py-2 rounded-full border bg-white hover:bg-gray-50">
-              <PlusCircle className="w-4 h-4 text-orange-600" />
+            <Link href="/dashboard/servicos" className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500 text-white hover:bg-orange-600">
+              <PlusCircle className="w-4 h-4" />
               <span className="text-sm">Adicionar Serviço</span>
             </Link>
-            <Link href="/dashboard/profissionais" className="inline-flex items-center gap-2 px-3 py-2 rounded-full border bg-white hover:bg-gray-50">
-              <Users className="w-4 h-4 text-orange-600" />
+            <Link href="/dashboard/profissionais" className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500 text-white hover:bg-orange-600">
+              <Users className="w-4 h-4" />
               <span className="text-sm">Adicionar Profissional</span>
             </Link>
-            <Link href="/dashboard/configuracoes" className="inline-flex items-center gap-2 px-3 py-2 rounded-full border bg-white hover:bg-gray-50">
-              <Settings className="w-4 h-4 text-orange-600" />
+            <Link href="/dashboard/configuracoes" className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500 text-white hover:bg-orange-600">
+              <Settings className="w-4 h-4" />
               <span className="text-sm">Configurações</span>
             </Link>
           </div>
@@ -814,36 +814,14 @@ export default function Dashboard() {
                             href={`https://api.whatsapp.com/send?phone=${toE164(app.customer_phone)}&text=${encodeURIComponent(message)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-full border border-green-600 bg-green-600 text-white hover:bg-green-700 hover:border-green-700 shadow-sm"
+                            className="inline-flex items-center px-4 py-2 text-xs font-semibold rounded-full bg-green-600 text-white hover:bg-green-700 shadow-sm"
                           >
-                            <Phone className="w-3.5 h-3.5 mr-1.5" /> Confirmar via WhatsApp
+                            <Phone className="w-3.5 h-3.5 mr-1.5" /> WhatsApp
                           </a>
-                        )}
-                        {app.status !== 'confirmed' && (
-                          <button
-                            onClick={async () => {
-                              try {
-                                const res = await fetch('/api/dashboard/appointments', {
-                                  method: 'PUT',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  credentials: 'include',
-                                  body: JSON.stringify({ id: app.id, status: 'confirmed' })
-                                });
-                                const json = await res.json().catch(() => ({}));
-                                if (!res.ok) throw new Error(json?.error || 'Erro ao confirmar');
-                                setUpcoming(prev => prev.map(x => x.id === app.id ? { ...x, status: 'confirmed' } : x));
-                              } catch (err) {
-                                alert(err instanceof Error ? err.message : String(err));
-                              }
-                            }}
-                            className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-md border border-green-600 text-green-700 bg-white hover:bg-green-50"
-                          >
-                            Marcar como Confirmado
-                          </button>
                         )}
                         <button
                           disabled={app.status === 'confirmed'}
-                          className={`px-3 py-1.5 text-xs font-semibold rounded-full border flex items-center ${app.status === 'confirmed' ? 'bg-green-600 text-white border-green-600 cursor-default' : 'bg-white text-green-700 border-green-600 hover:bg-green-50'}`}
+                          className={`px-4 py-2 text-xs font-semibold rounded-full flex items-center ${app.status === 'confirmed' ? 'bg-green-600 text-white cursor-default' : 'bg-green-600 text-white hover:bg-green-700'}`}
                           onClick={async () => {
                             if (app.status === 'confirmed') return;
                             try {
@@ -861,7 +839,7 @@ export default function Dashboard() {
                             }
                           }}
                         >
-                          {app.status === 'confirmed' ? 'Confirmado' : 'Pendente de confirmação'}
+                          {app.status === 'confirmed' ? 'Confirmado' : 'Confirmar'}
                         </button>
                       </div>
                     </div>
