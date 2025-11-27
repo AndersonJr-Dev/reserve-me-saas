@@ -397,6 +397,59 @@ export const db = {
 
     return { services: servicesOut, professionals: professionalsOut };
   },
+
+  async getRevenueBreakdownRangeFiltered(
+    salonId: string,
+    startISO: string,
+    endISO: string,
+    opts?: { professionalId?: string; serviceId?: string }
+  ) {
+    let q = this.client
+      .from('appointments')
+      .select('id, service_id, professional_id, status, appointment_date')
+      .eq('salon_id', salonId)
+      .in('status', ['confirmed', 'completed'])
+      .gte('appointment_date', startISO)
+      .lte('appointment_date', endISO);
+    if (opts?.professionalId) q = q.eq('professional_id', opts.professionalId);
+    if (opts?.serviceId) q = q.eq('service_id', opts.serviceId);
+    const { data: apps, error: appsErr } = await q;
+    if (appsErr) return { services: [], professionals: [] };
+
+    const serviceIds = Array.from(new Set((apps || []).map(a => a.service_id).filter(Boolean)));
+    const professionalIds = Array.from(new Set((apps || []).map(a => a.professional_id).filter(Boolean)));
+
+    const [{ data: services }, { data: pros }] = await Promise.all([
+      this.client.from('services').select('id, name, price').in('id', serviceIds),
+      this.client.from('professionals').select('id, name').in('id', professionalIds)
+    ]);
+
+    const priceByService = new Map<string, number>();
+    const nameByService = new Map<string, string>();
+    (services || []).forEach(s => { priceByService.set(s.id, Number(s.price) || 0); nameByService.set(s.id, s.name); });
+
+    const nameByProfessional = new Map<string, string>();
+    (pros || []).forEach(p => { nameByProfessional.set(p.id, p.name); });
+
+    const serviceTotals = new Map<string, number>();
+    const professionalTotals = new Map<string, number>();
+
+    (apps || []).forEach(a => {
+      const v = priceByService.get(a.service_id) || 0;
+      serviceTotals.set(a.service_id, (serviceTotals.get(a.service_id) || 0) + v);
+      professionalTotals.set(a.professional_id, (professionalTotals.get(a.professional_id) || 0) + v);
+    });
+
+    const servicesOut = Array.from(serviceTotals.entries())
+      .map(([id, amount]) => ({ id, name: nameByService.get(id) || 'Serviço', amount }))
+      .sort((a, b) => b.amount - a.amount);
+
+    const professionalsOut = Array.from(professionalTotals.entries())
+      .map(([id, amount]) => ({ id, name: nameByProfessional.get(id) || 'Profissional', amount }))
+      .sort((a, b) => b.amount - a.amount);
+
+    return { services: servicesOut, professionals: professionalsOut };
+  },
   // Criar agendamento
   async createAppointment(appointmentData: CreateAppointmentInput): Promise<Appointment | null> {
     const { data, error } = await supabase

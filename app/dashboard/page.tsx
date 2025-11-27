@@ -626,21 +626,28 @@ export default function Dashboard() {
                 <span className="text-sm font-semibold text-gray-900">Receita e CRM Financeiro</span>
               </div>
               <div className="flex items-center gap-2">
-                <select
-                  value={segPeriod}
-                  onChange={(e) => { const v = e.target.value as typeof segPeriod; setSegPeriod(v); if (typeof window !== 'undefined') window.localStorage.setItem('seg_period', v); }}
-                  className="text-xs px-2 py-1 border rounded-md bg-white"
-                >
-                  <option value="today">Hoje</option>
-                  <option value="7">Últimos 7 dias</option>
-                  <option value="30">Últimos 30 dias</option>
-                  {(((role || '').toLowerCase() === 'admin') || ((planType || '').toLowerCase() === 'advanced' && subscriptionStatus === 'active') || ((planType || '').toLowerCase() === 'premium' && subscriptionStatus === 'active')) && (
-                    <option value="90">Últimos 90 dias</option>
-                  )}
-                  {(((role || '').toLowerCase() === 'admin') || ((planType || '').toLowerCase() === 'premium' && subscriptionStatus === 'active')) && (
-                    <option value="120">Últimos 120 dias</option>
-                  )}
-                </select>
+                <div className="flex items-center bg-gray-50 border rounded-full p-1">
+                  {([
+                    { v: 'today', label: 'Hoje' },
+                    { v: '7', label: '7d' },
+                    { v: '30', label: '30d' },
+                  ].concat(
+                    (((role || '').toLowerCase() === 'admin') || ((planType || '').toLowerCase() === 'advanced' && subscriptionStatus === 'active') || ((planType || '').toLowerCase() === 'premium' && subscriptionStatus === 'active'))
+                      ? [{ v: '90', label: '90d' }] : []
+                  ).concat(
+                    (((role || '').toLowerCase() === 'admin') || ((planType || '').toLowerCase() === 'premium' && subscriptionStatus === 'active'))
+                      ? [{ v: '120', label: '120d' }] : []
+                  ) as { v: typeof segPeriod; label: string }[]).map(opt => (
+                    <button
+                      key={opt.v}
+                      onClick={() => { setSegPeriod(opt.v); if (typeof window !== 'undefined') window.localStorage.setItem('seg_period', opt.v); }}
+                      className={`text-xs px-3 py-1 rounded-full flex items-center gap-1 ${segPeriod === opt.v ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:bg-white'}`}
+                    >
+                      {opt.v === 'today' ? <Clock className="w-3 h-3" /> : <BarChart3 className="w-3 h-3" />}
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
                 <select
                   value={segProId}
                   onChange={(e) => setSegProId(e.target.value)}
@@ -720,48 +727,31 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Ações Rápidas */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border h-fit">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Ações Rápidas</h2>
-              <div className="space-y-3">
-                <Link href="/dashboard/servicos" className="w-full flex items-center p-4 rounded-xl border hover:border-orange-300 transition-colors text-gray-800">
-                  <span className="mr-3 bg-orange-50 text-orange-600 p-2 rounded-md">
-                    <PlusCircle className="w-5 h-5" />
-                  </span>
-                  Adicionar Serviço
-                </Link>
-                <Link href="/dashboard/profissionais" className="w-full flex items-center p-4 rounded-xl border hover:border-orange-300 transition-colors text-gray-800">
-                  <span className="mr-3 bg-orange-50 text-orange-600 p-2 rounded-md">
-                    <Users className="w-5 h-5" />
-                  </span>
-                  Adicionar Profissional
-                </Link>
-                <Link href="/dashboard/configuracoes" className="w-full flex items-center p-4 rounded-xl border hover:border-orange-300 transition-colors text-gray-800">
-                  <span className="mr-3 bg-orange-50 text-orange-600 p-2 rounded-md">
-                    <Settings className="w-5 h-5" />
-                  </span>
-                  Abrir Configurações
-                </Link>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Upgrade de Plano</h2>
-              <Link href="/planos" className="w-full inline-flex items-center justify-center bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors font-semibold">
-                Ver Planos
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
-            </div>
+        {/* Toolbar superior */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/servicos" className="inline-flex items-center gap-2 px-3 py-2 rounded-full border bg-white hover:bg-gray-50">
+              <PlusCircle className="w-4 h-4 text-orange-600" />
+              <span className="text-sm">Adicionar Serviço</span>
+            </Link>
+            <Link href="/dashboard/profissionais" className="inline-flex items-center gap-2 px-3 py-2 rounded-full border bg-white hover:bg-gray-50">
+              <Users className="w-4 h-4 text-orange-600" />
+              <span className="text-sm">Adicionar Profissional</span>
+            </Link>
+            <Link href="/dashboard/configuracoes" className="inline-flex items-center gap-2 px-3 py-2 rounded-full border bg-white hover:bg-gray-50">
+              <Settings className="w-4 h-4 text-orange-600" />
+              <span className="text-sm">Configurações</span>
+            </Link>
           </div>
+          <div className="text-sm text-gray-500">Atualiza automaticamente</div>
+        </div>
 
-          {/* Lista de Próximos Agendamentos */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-gray-900">Próximos Agendamentos</h2>
-              <span className="text-sm text-gray-500">Atualiza automaticamente</span>
-            </div>
+        {/* Lista de Próximos Agendamentos */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-bold text-gray-900">Próximos Agendamentos</h2>
+            <div className="hidden sm:block"></div>
+          </div>
           
             {upcoming.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-200">
@@ -824,11 +814,9 @@ export default function Dashboard() {
                             href={`https://api.whatsapp.com/send?phone=${toE164(app.customer_phone)}&text=${encodeURIComponent(message)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-green-600 text-white hover:bg-green-700 shadow-sm"
-                            aria-label="Abrir WhatsApp"
-                            title="Abrir WhatsApp"
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-full border border-green-600 bg-green-600 text-white hover:bg-green-700 hover:border-green-700 shadow-sm"
                           >
-                            <Phone className="w-4 h-4" />
+                            <Phone className="w-3.5 h-3.5 mr-1.5" /> Confirmar via WhatsApp
                           </a>
                         )}
                         {app.status !== 'confirmed' && (
@@ -873,7 +861,7 @@ export default function Dashboard() {
                             }
                           }}
                         >
-                          {app.status === 'confirmed' ? 'Confirmado' : 'Marcar como Confirmado'}
+                          {app.status === 'confirmed' ? 'Confirmado' : 'Pendente de confirmação'}
                         </button>
                       </div>
                     </div>
@@ -881,7 +869,6 @@ export default function Dashboard() {
                 })}
               </div>
             )}
-          </div>
         </div>
       </div>
 

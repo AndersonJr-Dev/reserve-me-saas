@@ -45,6 +45,13 @@ export default function AgendamentosPage() {
     });
     return map;
   }, [monthApps]);
+  const colorForId = (id?: string) => {
+    if (!id) return 'bg-gray-300';
+    const codes = ['bg-orange-500','bg-indigo-500','bg-green-500','bg-blue-500','bg-pink-500','bg-purple-500','bg-teal-500'];
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+    return codes[hash % codes.length];
+  };
 
   const selectedApps = useMemo(() => {
     const s = new Date(selectedDate);
@@ -87,14 +94,21 @@ export default function AgendamentosPage() {
               </div>
             </div>
             <div className="grid grid-cols-7 gap-2">
+              {['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((w) => (
+                <div key={w} className="text-xs font-semibold text-gray-500 px-2">{w}</div>
+              ))}
               {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
                 const apps = byDay.get(day) || [];
                 const isToday = day === new Date().getDate() && today.getMonth() === new Date().getMonth() && today.getFullYear() === new Date().getFullYear();
                 return (
-                  <button key={day} onClick={() => setSelectedDate(new Date(today.getFullYear(), today.getMonth(), day))} className={`text-sm rounded-lg border p-2 text-left ${isToday ? 'border-orange-500 bg-orange-50' : 'hover:border-orange-300'} ${apps.length > 0 ? 'relative' : ''}`}>
-                    <div className="font-semibold">{day}</div>
+                  <button key={day} onClick={() => setSelectedDate(new Date(today.getFullYear(), today.getMonth(), day))} className={`text-sm rounded-xl border p-3 text-left bg-white ${isToday ? 'border-orange-500 ring-2 ring-orange-200' : 'hover:border-orange-300'} ${apps.length > 0 ? 'relative' : ''}`}>
+                    <div className="font-semibold text-gray-900">{day}</div>
                     {apps.length > 0 && (
-                      <div className="text-xs text-gray-600">{apps.length} agendamento(s)</div>
+                      <div className="mt-1 flex items-center gap-1">
+                        {apps.slice(0, 6).map(a => (
+                          <span key={a.id} className={`inline-block w-2 h-2 rounded-full ${colorForId(a.professional_id)}`}></span>
+                        ))}
+                      </div>
                     )}
                   </button>
                 );
@@ -111,12 +125,12 @@ export default function AgendamentosPage() {
             ) : (
               <div className="space-y-3">
                 {selectedApps.map(app => (
-                  <div key={app.id} className="border rounded p-3 flex items-center justify-between">
+                  <div key={app.id} className="border rounded-xl p-3 flex items-center justify-between bg-white">
                     <div>
-                      <div className="font-semibold">{app.customer_name}</div>
+                      <div className="font-semibold text-gray-900">{app.customer_name}</div>
                       <div className="text-sm text-gray-600">{new Date(app.appointment_date).toLocaleString()}</div>
                     </div>
-                    <span className="text-xs px-2 py-1 rounded border">{app.status}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full border ${app.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' : app.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>{app.status}</span>
                   </div>
                 ))}
               </div>

@@ -297,11 +297,11 @@ export default function ProfissionaisPage() {
                         <h3 className="font-semibold mb-2">Horário de trabalho</h3>
                         <div className="grid md:grid-cols-2 gap-3">
                           {Object.entries({ monday:'Segunda', tuesday:'Terça', wednesday:'Quarta', thursday:'Quinta', friday:'Sexta', saturday:'Sábado', sunday:'Domingo' }).map(([key,label]) => (
-                            <div key={key} className="border rounded p-3">
+                            <div key={key} className="border rounded-xl p-3 bg-white">
                               <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium">{label}</span>
+                                <span className="text-sm font-semibold text-gray-900">{label}</span>
                                 <label className="text-xs flex items-center gap-2">
-                                  <input type="checkbox" checked={!!hoursDraft[key]?.isOpen} onChange={(e) => setHoursDraft(prev => ({ ...prev, [key]: { ...(prev[key] || {}), isOpen: e.target.checked } }))} />
+                                  <input type="checkbox" checked={!!hoursDraft[key]?.isOpen} onChange={(e) => setHoursDraft(prev => ({ ...prev, [key]: { ...(prev[key] || {}), isOpen: e.target.checked } }))} className="rounded" />
                                   Aberto
                                 </label>
                               </div>
@@ -309,11 +309,11 @@ export default function ProfissionaisPage() {
                                 <div className="grid grid-cols-2 gap-2">
                                   <div>
                                     <label className="text-xs text-gray-600">Abre</label>
-                                    <input type="time" value={hoursDraft[key]?.open || ''} onChange={(e) => setHoursDraft(prev => ({ ...prev, [key]: { ...(prev[key] || { isOpen: true }), open: e.target.value } }))} className="w-full border rounded px-2 py-1" />
+                                    <input type="time" value={hoursDraft[key]?.open || ''} onChange={(e) => setHoursDraft(prev => ({ ...prev, [key]: { ...(prev[key] || { isOpen: true }), open: e.target.value } }))} className="w-full border rounded-lg px-2 py-2 bg-white" />
                                   </div>
                                   <div>
                                     <label className="text-xs text-gray-600">Fecha</label>
-                                    <input type="time" value={hoursDraft[key]?.close || ''} onChange={(e) => setHoursDraft(prev => ({ ...prev, [key]: { ...(prev[key] || { isOpen: true }), close: e.target.value } }))} className="w-full border rounded px-2 py-1" />
+                                    <input type="time" value={hoursDraft[key]?.close || ''} onChange={(e) => setHoursDraft(prev => ({ ...prev, [key]: { ...(prev[key] || { isOpen: true }), close: e.target.value } }))} className="w-full border rounded-lg px-2 py-2 bg-white" />
                                   </div>
                                 </div>
                               )}
@@ -321,8 +321,8 @@ export default function ProfissionaisPage() {
                           ))}
                         </div>
                         <div className="mt-3 flex gap-2">
-                          <button onClick={() => saveHours(p.id)} className="bg-orange-500 text-white px-3 py-2 rounded flex items-center"><Save className="w-4 h-4 mr-1"/> Salvar horários</button>
-                          <button onClick={() => setEditingHoursId(null)} className="bg-gray-100 text-gray-800 px-3 py-2 rounded">Cancelar</button>
+                          <button onClick={() => saveHours(p.id)} className="bg-orange-500 text-white px-3 py-2 rounded-lg flex items-center hover:bg-orange-600"><Save className="w-4 h-4 mr-1"/> Salvar horários</button>
+                          <button onClick={() => setEditingHoursId(null)} className="bg-gray-100 text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-200">Cancelar</button>
                         </div>
                       </div>
                     )}
