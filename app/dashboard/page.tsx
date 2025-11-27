@@ -799,9 +799,11 @@ export default function Dashboard() {
                             href={`https://api.whatsapp.com/send?phone=${toE164(app.customer_phone)}&text=${encodeURIComponent(message)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-md border border-green-600 bg-green-600 text-white hover:bg-green-700 hover:border-green-700 shadow-sm"
+                            className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-green-600 text-white hover:bg-green-700 shadow-sm"
+                            aria-label="Abrir WhatsApp"
+                            title="Abrir WhatsApp"
                           >
-                            <Phone className="w-3.5 h-3.5 mr-1.5" /> Confirmar via WhatsApp
+                            <Phone className="w-4 h-4" />
                           </a>
                         )}
                         {app.status !== 'confirmed' && (
@@ -826,10 +828,28 @@ export default function Dashboard() {
                             Marcar como Confirmado
                           </button>
                         )}
-                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border flex items-center ${app.status === 'confirmed' ? 'bg-green-100 text-green-700' : app.status === 'completed' ? 'bg-blue-100 text-blue-700' : app.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${app.status === 'confirmed' ? 'bg-green-500' : app.status === 'completed' ? 'bg-blue-500' : app.status === 'cancelled' ? 'bg-red-500' : 'bg-yellow-500'}`}></span>
-                          {app.status === 'confirmed' ? 'Confirmado' : 'Pendente de confirmação'}
-                        </span>
+                        <button
+                          disabled={app.status === 'confirmed'}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-full border flex items-center ${app.status === 'confirmed' ? 'bg-green-600 text-white border-green-600 cursor-default' : 'bg-white text-green-700 border-green-600 hover:bg-green-50'}`}
+                          onClick={async () => {
+                            if (app.status === 'confirmed') return;
+                            try {
+                              const res = await fetch('/api/dashboard/appointments', {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify({ id: app.id, status: 'confirmed' })
+                              });
+                              const json = await res.json().catch(() => ({}));
+                              if (!res.ok) throw new Error(json?.error || 'Erro ao confirmar');
+                              setUpcoming(prev => prev.map(x => x.id === app.id ? { ...x, status: 'confirmed' } : x));
+                            } catch (err) {
+                              alert(err instanceof Error ? err.message : String(err));
+                            }
+                          }}
+                        >
+                          {app.status === 'confirmed' ? 'Confirmado' : 'Marcar como Confirmado'}
+                        </button>
                       </div>
                     </div>
                   );

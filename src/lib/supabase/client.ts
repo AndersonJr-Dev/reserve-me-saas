@@ -65,7 +65,7 @@ export interface Appointment {
   customer_name: string;
   customer_phone: string;
   customer_email?: string;
-  status: 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -403,7 +403,7 @@ export const db = {
       .from('appointments')
       .insert([{
         ...appointmentData,
-        status: appointmentData.status || 'confirmed'
+        status: appointmentData.status || 'pending'
       }])
       .select()
       .single();

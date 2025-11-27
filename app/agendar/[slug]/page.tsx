@@ -187,7 +187,7 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
         customer_name: appointment.customerInfo.name,
         customer_phone: appointment.customerInfo.phone,
         customer_email: appointment.customerInfo.email,
-        status: 'confirmed'
+        status: 'pending'
       };
 
       const saved = await db.createAppointment(appointmentData);

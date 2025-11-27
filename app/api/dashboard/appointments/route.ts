@@ -29,7 +29,7 @@ export async function PUT(request: NextRequest) {
     const status = body?.status as string | undefined;
     if (!id || !status) return NextResponse.json({ error: 'ID e status são obrigatórios' }, { status: 400 });
 
-    if (!['confirmed', 'completed', 'cancelled', 'no_show'].includes(status)) {
+    if (!['pending', 'confirmed', 'completed', 'cancelled', 'no_show'].includes(status)) {
       return NextResponse.json({ error: 'Status inválido' }, { status: 400 });
     }
 
