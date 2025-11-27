@@ -37,14 +37,17 @@ export default function Dashboard() {
   const [waTemplate, setWaTemplate] = useState<string | null>(null);
   const [topServices, setTopServices] = useState<{ name: string; amount: number }[]>([]);
   const [topProfessionals, setTopProfessionals] = useState<{ name: string; amount: number }[]>([]);
+  const [alerts, setAlerts] = useState<{ id: string; title: string; time: string }[]>([]);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [alertedIds, setAlertedIds] = useState<Set<string>>(new Set());
   const [monthlyGoal, setMonthlyGoal] = useState<number>(() => {
     if (typeof window === 'undefined') return 0;
     const v = window.localStorage.getItem('monthly_goal');
     return v ? Number(v) : 0;
   });
-  const [segPeriod, setSegPeriod] = useState<'7' | '30' | 'month'>(() => {
+  const [segPeriod, setSegPeriod] = useState<'today' | '7' | '30' | '90' | '120' | 'month'>(() => {
     if (typeof window === 'undefined') return 'month';
-    return (window.localStorage.getItem('seg_period') as '7' | '30' | 'month') || 'month';
+    return (window.localStorage.getItem('seg_period') as 'today' | '7' | '30' | '90' | '120' | 'month') || 'month';
   });
   const [serviceGoals, setServiceGoals] = useState<Record<string, number>>(() => {
     if (typeof window === 'undefined') return {};
@@ -68,7 +71,8 @@ export default function Dashboard() {
         const now = new Date();
         const endISO = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
         const start = new Date(now);
-        start.setDate(start.getDate() - (segPeriod === '7' ? 6 : 29));
+        const days = segPeriod === 'today' ? 0 : segPeriod === '7' ? 6 : segPeriod === '30' ? 29 : segPeriod === '90' ? 89 : segPeriod === '120' ? 119 : 29;
+        start.setDate(start.getDate() - days);
         start.setHours(0,0,0,0);
         breakdown = await db.getRevenueBreakdownRange(salonId, start.toISOString(), endISO);
       }
@@ -77,6 +81,53 @@ export default function Dashboard() {
     };
     refetchBreakdown();
   }, [segPeriod, planType, subscriptionStatus, salonId, role]);
+
+  useEffect(() => {
+    const playBeep = () => {
+      try {
+        const AC = (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext || AudioContext;
+        const ctx = new AC();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = 880;
+        o.connect(g);
+        g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.0001, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.01);
+        o.start();
+        setTimeout(() => { g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3); o.stop(); ctx.close(); }, 600);
+      } catch {}
+    };
+
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const thresholdMs = 5 * 60 * 1000; // 5 minutos
+      const upcomingAll = [...upcoming];
+      const newAlerts: { id: string; title: string; time: string }[] = [];
+      const alerted = new Set(alertedIds);
+
+      for (const app of upcomingAll) {
+        const t = new Date(app.appointment_date).getTime();
+        const diff = t - now;
+        if (diff <= thresholdMs && diff > 0 && !alerted.has(app.id)) {
+          alerted.add(app.id);
+          newAlerts.push({ id: app.id, title: `${app.customer_name} (${app.status === 'confirmed' ? 'Confirmado' : 'Agendado'})`, time: new Date(app.appointment_date).toLocaleTimeString() });
+        }
+      }
+
+      if (newAlerts.length > 0) {
+        setAlerts((prev) => [...prev, ...newAlerts]);
+        setAlertedIds(alerted);
+        if (soundEnabled) playBeep();
+      }
+
+      // Auto limpar alertas de agendamento já passados há 10 min
+      setAlerts((prev) => prev.filter(a => (new Date(a.time).getTime() || 0) > 0));
+    }, 30000);
+
+    return () => clearInterval(timer);
+  }, [upcoming, soundEnabled, alertedIds]);
 
   const supabase = createClientComponentClient();
 
@@ -528,7 +579,7 @@ export default function Dashboard() {
       
         {/* Cards de Estatísticas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-sm border">
+          <Link href="/dashboard/agendamentos" className="bg-white p-6 rounded-xl shadow-sm border hover:border-orange-300 transition-colors">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-orange-50 p-3 rounded-lg">
                 <Calendar className="w-6 h-6 text-orange-600" />
@@ -537,7 +588,7 @@ export default function Dashboard() {
             </div>
             <h3 className="text-3xl font-bold text-gray-900">{stats.todayCount}</h3>
             <p className="text-sm text-gray-600 mt-1">Agendamentos</p>
-          </div>
+          </Link>
 
           <div className="bg-white p-6 rounded-xl shadow-sm border">
             <div className="flex items-center justify-between mb-4">
@@ -550,7 +601,7 @@ export default function Dashboard() {
             <p className="text-sm text-gray-600 mt-1">Confirmados</p>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border">
+          <Link href="/dashboard/profissionais" className="bg-white p-6 rounded-xl shadow-sm border hover:border-orange-300 transition-colors">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-orange-50 p-3 rounded-lg">
                 <Users className="w-6 h-6 text-orange-600" />
@@ -559,37 +610,88 @@ export default function Dashboard() {
             </div>
             <h3 className="text-3xl font-bold text-gray-900">{stats.professionalsCount}</h3>
             <p className="text-sm text-gray-600 mt-1">Profissionais ativos</p>
-          </div>
+          </Link>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border">
+          <div className="bg-white p-6 rounded-xl shadow-sm border lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
-              <div className="bg-orange-50 p-3 rounded-lg">
-                <BarChart3 className="w-6 h-6 text-orange-600" />
+              <div className="flex items-center gap-3">
+                <div className="bg-orange-50 p-3 rounded-lg">
+                  <BarChart3 className="w-6 h-6 text-orange-600" />
+                </div>
+                <span className="text-sm font-semibold text-gray-900">Receita e CRM Financeiro</span>
               </div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Hoje</span>
-            </div>
-            <h3 className="text-3xl font-bold text-gray-900">{(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? `R$ ${stats.revenueDay.toFixed(2)}` : '—'}</h3>
-            <p className="text-sm text-gray-600 mt-1">{(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? 'Confirmados' : 'Disponível nos planos Avançado e Premium'}</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-orange-50 p-3 rounded-lg">
-                <BarChart3 className="w-6 h-6 text-orange-600" />
+              <div className="flex items-center gap-2">
+                <select
+                  value={segPeriod}
+                  onChange={(e) => { const v = e.target.value as typeof segPeriod; setSegPeriod(v); if (typeof window !== 'undefined') window.localStorage.setItem('seg_period', v); }}
+                  className="text-xs px-2 py-1 border rounded-md bg-white"
+                >
+                  <option value="today">Hoje</option>
+                  <option value="7">Últimos 7 dias</option>
+                  <option value="30">Últimos 30 dias</option>
+                  {(((role || '').toLowerCase() === 'admin') || ((planType || '').toLowerCase() === 'advanced' && subscriptionStatus === 'active') || ((planType || '').toLowerCase() === 'premium' && subscriptionStatus === 'active')) && (
+                    <option value="90">Últimos 90 dias</option>
+                  )}
+                  {(((role || '').toLowerCase() === 'admin') || ((planType || '').toLowerCase() === 'premium' && subscriptionStatus === 'active')) && (
+                    <option value="120">Últimos 120 dias</option>
+                  )}
+                </select>
               </div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Semana</span>
             </div>
-            <h3 className="text-3xl font-bold text-gray-900">{(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? `R$ ${stats.revenueWeek.toFixed(2)}` : '—'}</h3>
-            <p className="text-sm text-gray-600 mt-1">{(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? 'Confirmados' : 'Disponível nos planos pagos'}</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-orange-50 p-3 rounded-lg">
-                <BarChart3 className="w-6 h-6 text-orange-600" />
+            {(((role || '').toLowerCase() === 'admin') || (['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active')) ? (
+              <div className="grid lg:grid-cols-3 gap-6">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Top Serviços</h3>
+                  <div className="space-y-2">
+                    {topServices.length === 0 ? <p className="text-sm text-gray-500">Sem dados</p> : topServices.map(s => (
+                      <div key={s.name} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700">{s.name}</span>
+                        <span className="font-semibold text-gray-900">R$ {s.amount.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Top Profissionais</h3>
+                  <div className="space-y-2">
+                    {topProfessionals.length === 0 ? <p className="text-sm text-gray-500">Sem dados</p> : topProfessionals.map(p => (
+                      <div key={p.name} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700">{p.name}</span>
+                        <span className="font-semibold text-gray-900">R$ {p.amount.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Ações</h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        const name = `crm_${segPeriod}_${new Date().toISOString().slice(0,10)}.csv`;
+                        const rows = [
+                          ['Período', String(segPeriod)],
+                          ...topServices.map(s => [`Serviço: ${s.name}`, String(s.amount.toFixed(2))]),
+                          ...topProfessionals.map(p => [`Profissional: ${p.name}`, String(p.amount.toFixed(2))])
+                        ];
+                        const csv = rows.map(r => r.join(',')).join('\n');
+                        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = name;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      className="px-3 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600"
+                    >
+                      Exportar CSV
+                    </button>
+                  </div>
+                </div>
               </div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Receita Mês</span>
-            </div>
-            <h3 className="text-3xl font-bold text-gray-900">{(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? `R$ ${stats.revenueMonth.toFixed(2)}` : '—'}</h3>
-            <p className="text-sm text-gray-600 mt-1">{(['advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? 'Confirmados' : 'Disponível nos planos Avançado e Premium'}</p>
+            ) : (
+              <p className="text-sm text-gray-600">Disponível nos planos pagos</p>
+            )}
           </div>
         </div>
 
@@ -697,14 +799,36 @@ export default function Dashboard() {
                             href={`https://api.whatsapp.com/send?phone=${toE164(app.customer_phone)}&text=${encodeURIComponent(message)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center px-3 py-1 text-xs font-semibold bg-green-600 text-white rounded-md hover:bg-green-700"
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-md border border-green-600 bg-green-600 text-white hover:bg-green-700 hover:border-green-700 shadow-sm"
                           >
-                            <Phone className="w-3.5 h-3.5 mr-1.5" /> WhatsApp
+                            <Phone className="w-3.5 h-3.5 mr-1.5" /> Confirmar via WhatsApp
                           </a>
+                        )}
+                        {app.status !== 'confirmed' && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                const res = await fetch('/api/dashboard/appointments', {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  credentials: 'include',
+                                  body: JSON.stringify({ id: app.id, status: 'confirmed' })
+                                });
+                                const json = await res.json().catch(() => ({}));
+                                if (!res.ok) throw new Error(json?.error || 'Erro ao confirmar');
+                                setUpcoming(prev => prev.map(x => x.id === app.id ? { ...x, status: 'confirmed' } : x));
+                              } catch (err) {
+                                alert(err instanceof Error ? err.message : String(err));
+                              }
+                            }}
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-md border border-green-600 text-green-700 bg-white hover:bg-green-50"
+                          >
+                            Marcar como Confirmado
+                          </button>
                         )}
                         <span className={`px-3 py-1 text-xs font-semibold rounded-full border flex items-center ${app.status === 'confirmed' ? 'bg-green-100 text-green-700' : app.status === 'completed' ? 'bg-blue-100 text-blue-700' : app.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
                           <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${app.status === 'confirmed' ? 'bg-green-500' : app.status === 'completed' ? 'bg-blue-500' : app.status === 'cancelled' ? 'bg-red-500' : 'bg-yellow-500'}`}></span>
-                          {app.status === 'confirmed' ? 'Confirmado' : app.status === 'completed' ? 'Concluído' : app.status === 'cancelled' ? 'Cancelado' : 'Não compareceu'}
+                          {app.status === 'confirmed' ? 'Confirmado' : 'Pendente de confirmação'}
                         </span>
                       </div>
                     </div>
@@ -716,6 +840,20 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Notificações */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        <div className="flex items-center justify-end mb-2">
+          <button onClick={() => setSoundEnabled(s => !s)} className="px-3 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">
+            Som de lembretes: {soundEnabled ? 'Ativo' : 'Desativado'}
+          </button>
+        </div>
+        {alerts.map(a => (
+          <div key={a.id} className="bg-orange-600 text-white px-4 py-2 rounded shadow">
+            <div className="font-semibold">Lembrete de agendamento</div>
+            <div className="text-sm">{a.title} às {a.time}</div>
+          </div>
+        ))}
+      </div>
       {/* Barra inferior com link público de agendamento */}
       <div className="border-t bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

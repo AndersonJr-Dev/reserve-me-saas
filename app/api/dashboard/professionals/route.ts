@@ -185,6 +185,7 @@ export async function POST(request: NextRequest) {
         phone: body.phone || null,
         email: body.email || null,
         photo_url: body.photo_url || null,
+        working_hours: body.working_hours || null,
         is_active: true
       })
       .select()
@@ -252,7 +253,8 @@ export async function PUT(request: NextRequest) {
         specialty: body.specialty || null,
         phone: body.phone || null,
         email: body.email || null,
-        photo_url: body.photo_url || null
+        photo_url: body.photo_url || null,
+        working_hours: body.working_hours || null
       })
       .eq('id', body.id)
       .eq('salon_id', userData.salon_id)

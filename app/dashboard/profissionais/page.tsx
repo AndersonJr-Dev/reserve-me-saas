@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Edit, Trash2, User, Users, Calendar } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, User, Users, Calendar, Save, Clock } from 'lucide-react';
 
 type ProfessionalType = {
   id: string;
@@ -13,6 +13,7 @@ type ProfessionalType = {
   phone?: string;
   email?: string;
   photo_url?: string;
+  working_hours?: Record<string, { isOpen: boolean; open?: string; close?: string }>;
 };
 
 type LocalUser = {
@@ -40,6 +41,17 @@ export default function ProfissionaisPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [editingHoursId, setEditingHoursId] = useState<string | null>(null);
+  const defaultHours: Record<string, { isOpen: boolean; open?: string; close?: string }> = {
+    monday: { isOpen: false },
+    tuesday: { isOpen: false },
+    wednesday: { isOpen: false },
+    thursday: { isOpen: false },
+    friday: { isOpen: false },
+    saturday: { isOpen: false },
+    sunday: { isOpen: false }
+  };
+  const [hoursDraft, setHoursDraft] = useState<Record<string, { isOpen: boolean; open?: string; close?: string }>>(defaultHours);
 
   useEffect(() => {
     const load = async () => {
@@ -159,6 +171,28 @@ export default function ProfissionaisPage() {
     setShowForm(true);
   };
 
+  const startEditHours = (p: ProfessionalType) => {
+    setEditingHoursId(p.id);
+    setHoursDraft({ ...defaultHours, ...(p.working_hours || {}) });
+  };
+
+  const saveHours = async (id: string) => {
+    try {
+      const res = await fetch('/api/dashboard/professionals', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id, name: professionals.find(x => x.id === id)?.name || '', working_hours: hoursDraft })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error || 'Erro ao salvar horários');
+      setProfessionals(p => p.map(x => x.id === id ? json.professional : x));
+      setEditingHoursId(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir profissional?')) return;
     await fetch(`/api/dashboard/professionals?id=${id}`, { method: 'DELETE', credentials: 'include' });
@@ -256,7 +290,42 @@ export default function ProfissionaisPage() {
                     <div className="mt-4 flex space-x-2">
                       <button onClick={() => handleEdit(p)} className="bg-blue-500 text-white px-3 py-1 rounded flex items-center"><Edit className="w-4 h-4 mr-1"/> Editar</button>
                       <button onClick={() => handleDelete(p.id)} className="bg-red-500 text-white px-3 py-1 rounded flex items-center"><Trash2 className="w-4 h-4 mr-1"/> Excluir</button>
+                      <button onClick={() => startEditHours(p)} className="bg-gray-100 text-gray-800 px-3 py-1 rounded flex items-center"><Clock className="w-4 h-4 mr-1"/> Horários</button>
                     </div>
+                    {editingHoursId === p.id && (
+                      <div className="mt-4 border-t pt-4">
+                        <h3 className="font-semibold mb-2">Horário de trabalho</h3>
+                        <div className="grid md:grid-cols-2 gap-3">
+                          {Object.entries({ monday:'Segunda', tuesday:'Terça', wednesday:'Quarta', thursday:'Quinta', friday:'Sexta', saturday:'Sábado', sunday:'Domingo' }).map(([key,label]) => (
+                            <div key={key} className="border rounded p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium">{label}</span>
+                                <label className="text-xs flex items-center gap-2">
+                                  <input type="checkbox" checked={!!hoursDraft[key]?.isOpen} onChange={(e) => setHoursDraft(prev => ({ ...prev, [key]: { ...(prev[key] || {}), isOpen: e.target.checked } }))} />
+                                  Aberto
+                                </label>
+                              </div>
+                              {hoursDraft[key]?.isOpen && (
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="text-xs text-gray-600">Abre</label>
+                                    <input type="time" value={hoursDraft[key]?.open || ''} onChange={(e) => setHoursDraft(prev => ({ ...prev, [key]: { ...(prev[key] || { isOpen: true }), open: e.target.value } }))} className="w-full border rounded px-2 py-1" />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-gray-600">Fecha</label>
+                                    <input type="time" value={hoursDraft[key]?.close || ''} onChange={(e) => setHoursDraft(prev => ({ ...prev, [key]: { ...(prev[key] || { isOpen: true }), close: e.target.value } }))} className="w-full border rounded px-2 py-1" />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 flex gap-2">
+                          <button onClick={() => saveHours(p.id)} className="bg-orange-500 text-white px-3 py-2 rounded flex items-center"><Save className="w-4 h-4 mr-1"/> Salvar horários</button>
+                          <button onClick={() => setEditingHoursId(null)} className="bg-gray-100 text-gray-800 px-3 py-2 rounded">Cancelar</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

@@ -50,6 +50,7 @@ export interface Professional {
   phone?: string;
   email?: string;
   photo_url?: string; // <--- ADICIONADO AQUI
+  working_hours?: WorkingHours; 
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -153,6 +154,21 @@ export const db = {
       return [];
     }
     
+    return data || [];
+  },
+
+  async getAppointmentsRange(salonId: string, startISO: string, endISO: string): Promise<Appointment[]> {
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('salon_id', salonId)
+      .gte('appointment_date', startISO)
+      .lte('appointment_date', endISO)
+      .order('appointment_date', { ascending: true });
+    if (error) {
+      console.error('Erro Supabase (getAppointmentsRange):', error);
+      return [];
+    }
     return data || [];
   },
 
