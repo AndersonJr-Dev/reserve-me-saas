@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://reserve.me/sitemap.xml
+Sitemap: https://reserve-me-online.vercel.app/sitemap.xml
 

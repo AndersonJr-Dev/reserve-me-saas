@@ -14,11 +14,23 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Reserve.me - Sistema de Agendamento Online para Salões e Barbearias",
+    default: "Reserve.me | Sistema para Salões e Barbearias",
     template: "%s | Reserve.me"
   },
-  description: "Automatize seus agendamentos e transforme seu salão ou barbearia em um negócio que funciona 24 horas por dia. Sistema completo de agendamento online com link personalizado.",
-  keywords: ["agendamento online", "agenda salão", "sistema agendamento", "barbearia online", "salão beleza", "app agendamento"],
+  description:
+    "Software completo para agendamento online, gestão financeira e controle de comissões para salões de beleza e barbearias. Teste grátis.",
+  keywords: [
+    "sistema para salão de beleza",
+    "programa para barbearia",
+    "app de agendamento online",
+    "software de gestão de estética",
+    "agendamento online",
+    "gestão de barbearia",
+    "software estética",
+    "controle de comissão",
+    "gestão financeira",
+    "agenda online para clínica de estética"
+  ],
   authors: [{ name: "Reserve.me" }],
   creator: "Reserve.me",
   publisher: "Reserve.me",
@@ -36,9 +48,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "pt_BR",
-    url: "https://reserve.me",
-    title: "Reserve.me - Sistema de Agendamento Online",
-    description: "Automatize seus agendamentos e transforme seu salão ou barbearia em um negócio que funciona 24 horas por dia.",
+    url: process.env.NEXT_PUBLIC_BASE_URL || "https://reserve-me-online.vercel.app",
+    title: "Transforme a gestão do seu salão",
+    description: "Pare de perder agendamentos. Tenha seu próprio site de reservas.",
     siteName: "Reserve.me",
   },
   twitter: {
@@ -46,7 +58,11 @@ export const metadata: Metadata = {
     title: "Reserve.me - Sistema de Agendamento Online",
     description: "Automatize seus agendamentos e transforme seu salão ou barbearia em um negócio que funciona 24 horas por dia.",
   },
-  metadataBase: new URL("https://reserve.me"),
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+  },
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://reserve-me-online.vercel.app"),
+  alternates: { canonical: "/" },
 };
 
 export default function RootLayout({

@@ -45,12 +45,12 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 px-4">
-              Sistema de Agendamento
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500"> Online</span>
+              Sistema para Salões e Barbearias
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500"> de Agendamento Online</span>
           </h1>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-3xl mx-auto px-4">
-              Automatize seus agendamentos e transforme seu salão ou barbearia em um negócio que funciona 24 horas por dia. 
-              Seus clientes agendam online, você foca no que importa.
+              Sistema de gestão de estética e barbearia com agendamento online, controle de comissões e gestão financeira. 
+              Pare de perder agendamentos: tenha seu próprio site de reservas.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
               <Link 
