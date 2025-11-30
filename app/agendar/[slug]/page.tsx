@@ -91,6 +91,7 @@ interface Step3Props {
   prevStep: () => void;
   salonId: string;
   salon: Salon | null;
+  selectedProfessional: Professional | null;
 }
 
 interface Step4Props {
@@ -192,7 +193,7 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
         throw new Error('Dados incompletos');
       }
 
-      const appointmentData: import('@/lib/supabase/client').CreateAppointmentInput = {
+      const payload = {
         salon_id: salon.id,
         service_id: appointment.selectedService.id,
         professional_id: appointment.selectedProfessional?.id === 'any' ? undefined : appointment.selectedProfessional?.id,
@@ -200,17 +201,17 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
         customer_name: appointment.customerInfo.name,
         customer_phone: appointment.customerInfo.phone,
         customer_email: appointment.customerInfo.email,
-        status: 'pending'
       };
 
-      const saved = await db.createAppointment(appointmentData);
+      const res = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-      if (saved) {
-        setIsSuccess(true);
-      } else {
-        throw new Error('Falha ao salvar no banco');
-      }
-      
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error || 'Erro ao criar agendamento');
+      setIsSuccess(true);
     } catch (err) {
       console.error('Erro:', err);
       alert('Erro ao finalizar agendamento. Tente novamente.');
@@ -339,6 +340,7 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
             prevStep={prevStep}
             salonId={salon?.id || ''}
             salon={salon}
+            selectedProfessional={appointment.selectedProfessional}
           />
         )}
         
@@ -461,7 +463,7 @@ const Step2 = ({ professionals, selectedProfessional, onSelectProfessional, prev
   </div>
 );
 
-const Step3 = ({ onSelectDateTime, prevStep, salonId, salon }: Step3Props) => {
+const Step3 = ({ onSelectDateTime, prevStep, salonId, salon, selectedProfessional }: Step3Props) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [occupiedTimes, setOccupiedTimes] = useState<string[]>([]);
   const [loadingTimes, setLoadingTimes] = useState(false);
@@ -473,16 +475,17 @@ const Step3 = ({ onSelectDateTime, prevStep, salonId, salon }: Step3Props) => {
     return d;
   });
 
-  // 1. Calcula horários baseados no JSON do salão
+  // 1. Calcula horários baseados no JSON (profissional, se disponível; senão, do salão)
   useEffect(() => {
-    if (salon?.working_hours && selectedDate) {
-      const slots = generateSlotsForDate(selectedDate, salon.working_hours);
+    const sourceHours = selectedProfessional?.working_hours || salon?.working_hours;
+    if (sourceHours && selectedDate) {
+      const slots = generateSlotsForDate(selectedDate, sourceHours);
       setAvailableSlots(slots);
     } else {
       // Fallback (lista fixa antiga) caso não tenha configuração
       setAvailableSlots(['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00']);
     }
-  }, [selectedDate, salon]);
+  }, [selectedDate, salon, selectedProfessional?.working_hours, selectedProfessional?.id]);
 
   // 2. Verifica disponibilidade no banco
   useEffect(() => {
@@ -491,7 +494,7 @@ const Step3 = ({ onSelectDateTime, prevStep, salonId, salon }: Step3Props) => {
     const checkAvailability = async () => {
       setLoadingTimes(true);
       try {
-        const appointments = await db.getAppointmentsByDate(salonId, selectedDate.toISOString());
+        const appointments = await db.getAppointmentsByDate(salonId, selectedDate.toISOString(), selectedProfessional?.id);
         
         const busy = appointments.map(app => {
           const d = new Date(app.appointment_date);
@@ -507,7 +510,7 @@ const Step3 = ({ onSelectDateTime, prevStep, salonId, salon }: Step3Props) => {
     };
 
     checkAvailability();
-  }, [selectedDate, salonId]);
+  }, [selectedDate, salonId, selectedProfessional?.id]);
 
   const handleTimeClick = (time: string) => {
     if (!selectedDate) return;

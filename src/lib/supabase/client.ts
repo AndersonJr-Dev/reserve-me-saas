@@ -3,11 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Debug: Verificar se as variáveis estão carregando (Isso vai aparecer no console do navegador)
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('🚨 ERRO CRÍTICO: Variáveis de ambiente do Supabase não encontradas!');
-  console.log('URL:', supabaseUrl);
-  console.log('KEY:', supabaseAnonKey ? 'Definida (Oculta)' : 'Não definida');
+  console.error('Variáveis de ambiente do Supabase ausentes');
 }
 
 // Cria o cliente forçando a existência das chaves (ou quebra com erro visível)
@@ -160,7 +157,7 @@ export const db = {
     return data || [];
   },
   // Buscar agendamentos de um dia específico (para verificar disponibilidade)
-  async getAppointmentsByDate(salonId: string, dateStr: string): Promise<Appointment[]> {
+  async getAppointmentsByDate(salonId: string, dateStr: string, professionalId?: string): Promise<Appointment[]> {
     // dateStr deve vir no formato YYYY-MM-DD ou ISO
     const startOfDay = new Date(dateStr);
     startOfDay.setHours(0, 0, 0, 0);
@@ -168,13 +165,17 @@ export const db = {
     const endOfDay = new Date(dateStr);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const { data, error } = await supabase
+    let base = supabase
       .from('appointments')
       .select('*')
       .eq('salon_id', salonId)
       .gte('appointment_date', startOfDay.toISOString())
       .lte('appointment_date', endOfDay.toISOString())
-      .neq('status', 'cancelled'); // Ignora os cancelados
+      .neq('status', 'cancelled');
+    if (professionalId && professionalId !== 'any') {
+      base = base.eq('professional_id', professionalId);
+    }
+    const { data, error } = await base;
     
     if (error) {
       console.error('Erro ao buscar disponibilidade:', error);
