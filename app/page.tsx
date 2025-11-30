@@ -46,9 +46,10 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 px-4">
-              Sistema de Agendamento
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500"> Online</span>
-              <span> para salões e barbearias</span>
+              Sistema de{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500">Agendamento Online</span>{' '}
+              para{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500">salões e barbearias</span>
           </h1>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-3xl mx-auto px-4">
               Sistema de gestão de estética e barbearia com agendamento online, controle de comissões e gestão financeira. 
@@ -83,7 +84,8 @@ export default function HomePage() {
               { src: '/dashboard.png', alt: 'Dashboard do sistema de agendamento para salão e barbearia' },
               { src: '/crm.png', alt: 'CRM financeiro com receita, ticket médio e totais' },
               { src: '/agendamentos.png', alt: 'Agenda online com confirmação e status de atendimentos' },
-              { src: '/cadastro.png', alt: 'Tela de cadastro de profissionais' }
+              { src: '/cadastro.png', alt: 'Tela de cadastro de profissionais' },
+              { src: '/proximos.png', alt: 'Tela de próximos agendamentos recentes' }
             ]}
           />
         </div>
