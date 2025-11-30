@@ -106,7 +106,7 @@ export default function AgendamentosClient() {
         <div className="grid lg:grid-cols-2 gap-8">
           <div className="bg-white rounded-xl shadow-sm border p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold">Calendário</h2>
+              <h2 className="text-lg font-bold text-gray-900">Calendário</h2>
               <div className="flex gap-2">
                 <button onClick={() => setToday(new Date(today.getFullYear(), today.getMonth() - 1, 1))} className="px-3 py-1 rounded border">←</button>
                 <button onClick={() => setToday(new Date(today.getFullYear(), today.getMonth() + 1, 1))} className="px-3 py-1 rounded border">→</button>
@@ -114,7 +114,7 @@ export default function AgendamentosClient() {
             </div>
             <div className="grid grid-cols-7 gap-2">
               {['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((w) => (
-                <div key={w} className="text-xs font-semibold text-gray-500 px-2">{w}</div>
+                <div key={w} className="text-xs font-semibold text-gray-800 px-2">{w}</div>
               ))}
               {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
                 const apps = byDay.get(day) || [];
@@ -136,7 +136,7 @@ export default function AgendamentosClient() {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border p-6">
-            <h2 className="text-lg font-bold mb-4">Agendamentos do dia</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Agendamentos do dia</h2>
             <div className="flex flex-wrap items-center gap-2 mb-3">
               {Array.from(new Map(selectedApps.map(a => [a.professional_id, a.professional_id])).keys()).filter(Boolean).map(pid => (
                 <span key={String(pid)} className="inline-flex items-center text-xs px-2 py-1 rounded-full border bg-white text-gray-900">

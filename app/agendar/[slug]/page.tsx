@@ -265,11 +265,11 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
           
           <div className="bg-gray-50 rounded-lg p-4 mb-6 text-sm text-left space-y-2 border border-gray-100">
              <div className="flex justify-between">
-                <span className="text-gray-500">Data:</span>
+                <span className="text-gray-900">Data:</span>
                 <span className="font-semibold">{appointment.selectedDateTime?.toLocaleDateString('pt-BR')} às {appointment.selectedDateTime?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute:'2-digit'})}</span>
              </div>
              <div className="flex justify-between">
-                <span className="text-gray-500">Serviço:</span>
+                <span className="text-gray-900">Serviço:</span>
                 <span className="font-semibold">{appointment.selectedService?.name}</span>
              </div>
           </div>
