@@ -32,8 +32,29 @@ const isTimeWithinHours = (date: Date, working: WorkingHours): boolean => {
   return current >= open && current < close
 }
 
+declare global {
+  var __rl_store__: Map<string, { count: number; reset: number }> | undefined
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const ipHeader = request.headers.get('x-forwarded-for') || ''
+    const ip = ipHeader.split(',')[0].trim() || 'unknown'
+    const key = `appointments:${ip}`
+    const now = Date.now()
+    const windowMs = 60_000
+    const max = 10
+    const current = globalThis.__rl_store__ || (globalThis.__rl_store__ = new Map<string, { count: number; reset: number }>())
+    const entry = current.get(key)
+    if (!entry || now > entry.reset) {
+      current.set(key, { count: 1, reset: now + windowMs })
+    } else {
+      if (entry.count >= max) {
+        return NextResponse.json({ error: 'Muitas requisições. Tente novamente em instantes.' }, { status: 429 })
+      }
+      entry.count += 1
+      current.set(key, entry)
+    }
     if (!supabaseUrl || !supabaseServiceKey) {
       return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 })
     }
@@ -118,7 +139,7 @@ export async function POST(request: NextRequest) {
 
     if (error) return NextResponse.json({ error: 'Erro ao criar agendamento' }, { status: 500 })
     return NextResponse.json({ appointment: created })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
