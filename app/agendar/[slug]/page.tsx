@@ -522,7 +522,7 @@ const Step3 = ({ onSelectDateTime, prevStep, salonId, salon, selectedProfessiona
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold flex items-center text-gray-800">
+      <h2 className="text-xl font-semibold flex items-center text-gray-900">
         <Clock className="w-5 h-5 mr-2 text-indigo-600" /> 
         Data e Horário
       </h2>
@@ -535,7 +535,7 @@ const Step3 = ({ onSelectDateTime, prevStep, salonId, salon, selectedProfessiona
             className={`flex-shrink-0 w-16 h-20 rounded-xl flex flex-col items-center justify-center border-2 transition-all ${
               selectedDate?.toDateString() === date.toDateString()
                 ? 'border-indigo-600 bg-indigo-600 text-white shadow-md transform scale-105'
-                : 'border-gray-100 hover:border-indigo-200 text-gray-600 bg-white'
+                : 'border-gray-100 hover:border-indigo-200 text-gray-900 bg-white'
             }`}
           >
             <span className="text-xs font-medium uppercase">
@@ -563,7 +563,7 @@ const Step3 = ({ onSelectDateTime, prevStep, salonId, salon, selectedProfessiona
                       className={`py-2 px-1 rounded-lg text-sm font-medium border transition-colors ${
                         isOccupied 
                           ? 'bg-gray-100 text-gray-400 border-gray-100 cursor-not-allowed decoration-slice line-through' 
-                          : 'border-gray-200 hover:border-indigo-500 hover:text-indigo-600 bg-white'
+                          : 'border-gray-200 hover:border-indigo-500 hover:text-indigo-600 bg-white text-gray-900'
                       }`}
                     >
                       {time}
