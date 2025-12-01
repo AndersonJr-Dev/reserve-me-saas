@@ -192,17 +192,17 @@ export default function Dashboard() {
         } catch {}
 
         // 3. Busca dados do banco em paralelo
-        const [dashboardData, prosData, servicesData, revenue] = await Promise.all([
-          db.getDashboardData(finalSalonId),
+        const [dashboardDataRes, prosData, servicesData, revenue] = await Promise.all([
+          fetch('/api/dashboard/appointments', { credentials: 'include' }).then(r => r.json()).catch(() => null),
           db.getProfessionalsBySalonId(finalSalonId),
           db.getServicesBySalonId(finalSalonId),
           db.getRevenueStats(finalSalonId)
         ]);
 
-        if (dashboardData) {
+        if (dashboardDataRes) {
           setStats({
-            todayCount: dashboardData.stats.todayCount || 0,
-            confirmedCount: dashboardData.stats.confirmedCount || 0,
+            todayCount: dashboardDataRes.stats?.todayCount || 0,
+            confirmedCount: dashboardDataRes.stats?.confirmedCount || 0,
             professionalsCount: prosData ? prosData.length : 0,
             revenueDay: revenue?.day || 0,
             revenueWeek: revenue?.week || 0,
@@ -212,7 +212,7 @@ export default function Dashboard() {
             prevWeekRevenue: revenue?.prevWeek || 0,
             prevMonthRevenue: revenue?.prevMonth || 0
           });
-          setUpcoming(dashboardData.upcoming || []);
+          setUpcoming(dashboardDataRes.upcoming || []);
           setProfessionals(prosData || []);
           setServices(servicesData || []);
         }

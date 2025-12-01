@@ -11,6 +11,67 @@ function getSupabaseAdmin() {
   return createClient(supabaseUrl, supabaseServiceKey);
 }
 
+export async function GET() {
+  try {
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('sb-access-token')?.value;
+    if (!accessToken) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+
+    const supabaseService = getSupabaseAdmin();
+    if (!supabaseService || !supabaseUrl || !supabaseAnonKey) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: `Bearer ${accessToken}` } } });
+
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+
+    const { data: userData } = await supabaseService
+      .from('users')
+      .select('salon_id')
+      .eq('id', user.id)
+      .single();
+
+    if (!userData?.salon_id) return NextResponse.json({ error: 'Salão não encontrado' }, { status: 404 });
+
+    const now = new Date();
+    const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
+    const todayEnd = new Date(now); todayEnd.setHours(23,59,59,999);
+
+    const [{ data: todayAppointments }, { data: upcomingAppointments }, { count: confirmedCount }] = await Promise.all([
+      supabaseService
+        .from('appointments')
+        .select('*')
+        .eq('salon_id', userData.salon_id)
+        .gte('appointment_date', todayStart.toISOString())
+        .lte('appointment_date', todayEnd.toISOString())
+        .order('appointment_date', { ascending: true }),
+      supabaseService
+        .from('appointments')
+        .select('*')
+        .eq('salon_id', userData.salon_id)
+        .gte('appointment_date', now.toISOString())
+        .order('appointment_date', { ascending: true })
+        .limit(5),
+      supabaseService
+        .from('appointments')
+        .select('*', { count: 'exact', head: true })
+        .eq('salon_id', userData.salon_id)
+        .eq('status', 'confirmed')
+    ]);
+
+    return NextResponse.json({
+      today: todayAppointments || [],
+      upcoming: upcomingAppointments || [],
+      stats: {
+        todayCount: (todayAppointments || []).length,
+        confirmedCount: confirmedCount || 0
+      }
+    });
+  } catch (err) {
+    console.error('Erro:', err);
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
+  }
+}
+
 export async function PUT(request: NextRequest) {
   try {
     const cookieStore = await cookies();
