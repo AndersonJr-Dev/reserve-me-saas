@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     // Buscar dados do usuário para pegar o salon_id
     const { data: userData } = await supabaseService
       .from('users')
-      .select('salon_id')
+      .select('salon_id, role')
       .eq('id', user.id)
       .single();
 
