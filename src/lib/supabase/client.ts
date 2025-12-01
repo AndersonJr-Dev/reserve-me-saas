@@ -185,6 +185,34 @@ export const db = {
     return data || [];
   },
 
+  // Disponibilidade pública via VIEW (sem PII)
+  async getSalonAvailabilityByDate(
+    salonId: string,
+    dateStr: string,
+    professionalId?: string
+  ): Promise<Array<{ salon_id: string; professional_id: string | null; service_id: string; appointment_date: string; status: string }>> {
+    const startOfDay = new Date(dateStr);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(dateStr);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    let base = supabase
+      .from('salon_availability')
+      .select('*')
+      .eq('salon_id', salonId)
+      .gte('appointment_date', startOfDay.toISOString())
+      .lte('appointment_date', endOfDay.toISOString());
+    if (professionalId && professionalId !== 'any') {
+      base = base.eq('professional_id', professionalId);
+    }
+    const { data, error } = await base;
+    if (error) {
+      console.error('Erro ao buscar disponibilidade pública:', error);
+      return [];
+    }
+    return (data || []) as Array<{ salon_id: string; professional_id: string | null; service_id: string; appointment_date: string; status: string }>;
+  },
+
   async getAppointmentsRange(salonId: string, startISO: string, endISO: string): Promise<Appointment[]> {
     const { data, error } = await supabase
       .from('appointments')

@@ -494,10 +494,9 @@ const Step3 = ({ onSelectDateTime, prevStep, salonId, salon, selectedProfessiona
     const checkAvailability = async () => {
       setLoadingTimes(true);
       try {
-        const appointments = await db.getAppointmentsByDate(salonId, selectedDate.toISOString(), selectedProfessional?.id);
-        
-        const busy = appointments.map(app => {
-          const d = new Date(app.appointment_date);
+        const availability = await db.getSalonAvailabilityByDate(salonId, selectedDate.toISOString(), selectedProfessional?.id);
+        const busy = availability.map(row => {
+          const d = new Date(row.appointment_date);
           return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         });
 
