@@ -32,8 +32,10 @@ export default function AgendamentosClient() {
         if (!sid) return;
 
         if (statusFilter) {
-          const res = await db.getAppointmentsByStatusPaginated(sid, selectedStatus, page, pageSize, scope);
-          setPaged(res);
+          const res = await fetch(`/api/dashboard/appointments?status=${selectedStatus}&scope=${scope}&page=${page}&pageSize=${pageSize}`,
+            { credentials: 'include' }
+          ).then(r => r.json()).catch(() => ({ items: [], total: 0 }));
+          setPaged(res || { items: [], total: 0 });
           const pros = await db.getProfessionalsBySalonId(sid);
           setProfessionals(pros || []);
         } else {
@@ -41,8 +43,9 @@ export default function AgendamentosClient() {
           const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
           startOfMonth.setHours(0,0,0,0);
           endOfMonth.setHours(23,59,59,999);
-          const apps = await db.getAppointmentsRange(sid, startOfMonth.toISOString(), endOfMonth.toISOString());
-          setMonthApps(apps);
+          const appsRes = await fetch(`/api/dashboard/appointments?start=${startOfMonth.toISOString()}&end=${endOfMonth.toISOString()}`, { credentials: 'include' })
+            .then(r => r.json()).catch(() => ({ data: [] }));
+          setMonthApps(appsRes?.data || []);
           const pros = await db.getProfessionalsBySalonId(sid);
           setProfessionals(pros || []);
         }

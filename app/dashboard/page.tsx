@@ -77,7 +77,8 @@ export default function Dashboard() {
         const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
         startISO = start.toISOString();
         endISO = end.toISOString();
-        breakdown = await db.getRevenueBreakdownMonthly(salonId);
+        breakdown = await fetch(`/api/dashboard/revenue?period=month`, { credentials: 'include' })
+          .then(r => r.json()).catch(() => ({ services: [], professionals: [], total: 0, count: 0 }));
       } else {
         const now = new Date();
         const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
@@ -87,19 +88,16 @@ export default function Dashboard() {
         end.setHours(23,59,59,999);
         startISO = start.toISOString();
         endISO = end.toISOString();
-        breakdown = await db.getRevenueBreakdownRangeFiltered(salonId, startISO, endISO, {
-          professionalId: segProId || undefined,
-          serviceId: segServiceId || undefined
-        });
+        const usp = new URLSearchParams({ start: startISO, end: endISO });
+        if (segProId) usp.set('professionalId', segProId);
+        if (segServiceId) usp.set('serviceId', segServiceId);
+        breakdown = await fetch(`/api/dashboard/revenue?${usp.toString()}`, { credentials: 'include' })
+          .then(r => r.json()).catch(() => ({ services: [], professionals: [], total: 0, count: 0 }));
       }
       setTopServices((breakdown?.services || []).slice(0, 5));
       setTopProfessionals((breakdown?.professionals || []).slice(0, 5));
-      const agg = await db.getRevenueAggregateRangeFiltered(salonId, startISO!, endISO!, {
-        professionalId: segProId || undefined,
-        serviceId: segServiceId || undefined
-      });
-      setPeriodTotal(agg.total || 0);
-      setPeriodCount(agg.count || 0);
+      setPeriodTotal(breakdown?.total || 0);
+      setPeriodCount(breakdown?.count || 0);
     };
     refetchBreakdown();
   }, [segPeriod, segProId, segServiceId, planType, subscriptionStatus, salonId, role]);
