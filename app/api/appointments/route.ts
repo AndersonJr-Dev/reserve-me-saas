@@ -12,6 +12,8 @@ type CreatePayload = {
   customer_name: string
   customer_phone: string
   customer_email?: string
+  tz_offset_minutes?: number
+  salon_timezone?: string
 }
 
 const WEEKDAY_KEYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
@@ -73,14 +75,33 @@ export async function POST(request: NextRequest) {
     if (isNaN(apptDate.getTime())) {
       return NextResponse.json({ error: 'Data inválida' }, { status: 400 })
     }
+    
 
     const { data: salon } = await supabase
       .from('salons')
-      .select('id, working_hours')
+      .select('id, working_hours, timezone')
       .eq('id', body.salon_id)
       .maybeSingle()
 
     if (!salon) return NextResponse.json({ error: 'Salão não encontrado' }, { status: 404 })
+
+    const salonTz = (salon as { timezone?: string }).timezone || body.salon_timezone || 'America/Sao_Paulo'
+    const parseOffsetFromTimeZone = (date: Date, timeZone: string): number => {
+      try {
+        const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(date)
+        const tz = parts.find(p => p.type === 'timeZoneName')?.value || 'UTC'
+        const m = tz.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/) // GMT-3 or GMT+5:30
+        if (!m) return 0
+        const sign = m[1] === '-' ? 1 : -1
+        const h = parseInt(m[2] || '0', 10)
+        const min = parseInt(m[3] || '0', 10)
+        return sign * (h * 60 + min)
+      } catch {
+        return 0
+      }
+    }
+    const offsetMin = typeof body.tz_offset_minutes === 'number' ? body.tz_offset_minutes : parseOffsetFromTimeZone(apptDate, salonTz)
+    const localApptDate = new Date(apptDate.getTime() - offsetMin * 60_000)
 
     let working = (salon as { working_hours?: WorkingHours }).working_hours as WorkingHours | undefined
     if (body.professional_id && body.professional_id !== 'any') {
@@ -95,19 +116,21 @@ export async function POST(request: NextRequest) {
       working = (prof as { working_hours?: WorkingHours }).working_hours || working
     }
 
-    if (!working || !isTimeWithinHours(apptDate, working)) {
+    if (!working || !isTimeWithinHours(localApptDate, working)) {
       return NextResponse.json({ error: 'Horário fora do expediente' }, { status: 400 })
     }
 
-    const dayStart = new Date(apptDate); dayStart.setHours(0,0,0,0)
-    const dayEnd = new Date(apptDate); dayEnd.setHours(23,59,59,999)
+    const dayStartLocal = new Date(localApptDate); dayStartLocal.setHours(0,0,0,0)
+    const dayEndLocal = new Date(localApptDate); dayEndLocal.setHours(23,59,59,999)
+    const dayStartUTC = new Date(dayStartLocal.getTime() + offsetMin * 60_000)
+    const dayEndUTC = new Date(dayEndLocal.getTime() + offsetMin * 60_000)
 
     let base = supabase
       .from('appointments')
       .select('*')
       .eq('salon_id', body.salon_id)
-      .gte('appointment_date', dayStart.toISOString())
-      .lte('appointment_date', dayEnd.toISOString())
+      .gte('appointment_date', dayStartUTC.toISOString())
+      .lte('appointment_date', dayEndUTC.toISOString())
       .neq('status', 'cancelled')
     if (body.professional_id && body.professional_id !== 'any') {
       base = base.eq('professional_id', body.professional_id)
@@ -115,8 +138,9 @@ export async function POST(request: NextRequest) {
     const { data: existing } = await base
 
     const conflict = (existing || []).some(a => {
-      const d = new Date(a.appointment_date)
-      return d.getHours() === apptDate.getHours() && d.getMinutes() === apptDate.getMinutes()
+      const dUTC = new Date(a.appointment_date)
+      const dLocal = new Date(dUTC.getTime() - offsetMin * 60_000)
+      return dLocal.getHours() === localApptDate.getHours() && dLocal.getMinutes() === localApptDate.getMinutes()
     })
     if (conflict) {
       return NextResponse.json({ error: 'Horário indisponível' }, { status: 409 })
@@ -128,7 +152,7 @@ export async function POST(request: NextRequest) {
         salon_id: body.salon_id,
         service_id: body.service_id,
         professional_id: body.professional_id && body.professional_id !== 'any' ? body.professional_id : null,
-        appointment_date: apptDate.toISOString(),
+        appointment_date: new Date(localApptDate.getTime() + offsetMin * 60_000).toISOString(),
         customer_name: String(body.customer_name),
         customer_phone: String(body.customer_phone),
         customer_email: body.customer_email ? String(body.customer_email) : null,

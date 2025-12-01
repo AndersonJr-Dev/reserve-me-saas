@@ -22,6 +22,7 @@ export interface Salon {
   address?: string;
   owner_id?: string;
   plan_type?: string;
+  timezone?: string;
   working_hours?: WorkingHours;
   created_at: string;
   updated_at: string;

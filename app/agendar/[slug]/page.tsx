@@ -198,6 +198,18 @@ export default function AppointmentPage({ params }: AppointmentPageProps) {
         service_id: appointment.selectedService.id,
         professional_id: appointment.selectedProfessional?.id === 'any' ? undefined : appointment.selectedProfessional?.id,
         appointment_date: appointment.selectedDateTime.toISOString(),
+        tz_offset_minutes: (() => {
+          const tz = salon?.timezone || 'America/Sao_Paulo';
+          const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(appointment.selectedDateTime);
+          const tzName = parts.find(p => p.type === 'timeZoneName')?.value || 'UTC';
+          const m = tzName.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+          if (!m) return 0;
+          const sign = m[1] === '-' ? 1 : -1;
+          const h = parseInt(m[2] || '0', 10);
+          const min = parseInt(m[3] || '0', 10);
+          return sign * (h * 60 + min);
+        })(),
+        salon_timezone: salon?.timezone || 'America/Sao_Paulo',
         customer_name: appointment.customerInfo.name,
         customer_phone: appointment.customerInfo.phone,
         customer_email: appointment.customerInfo.email,
@@ -495,9 +507,10 @@ const Step3 = ({ onSelectDateTime, prevStep, salonId, salon, selectedProfessiona
       setLoadingTimes(true);
       try {
         const availability = await db.getSalonAvailabilityByDate(salonId, selectedDate.toISOString(), selectedProfessional?.id);
+        const salonTz = salon?.timezone || 'America/Sao_Paulo';
         const busy = availability.map(row => {
-          const d = new Date(row.appointment_date);
-          return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          const dUTC = new Date(row.appointment_date);
+          return dUTC.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: salonTz });
         });
 
         setOccupiedTimes(busy);
