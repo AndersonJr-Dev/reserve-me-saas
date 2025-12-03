@@ -37,8 +37,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Criar cliente com service role key
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  // Criar cliente com service role key
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+    if (existingUser) {
+      return NextResponse.json({ error: 'E-mail já registrado. Faça login ou recupere sua senha.' }, { status: 400 });
+    }
 
     // Criar usuário na autenticação do Supabase
     console.log('📝 Tentando criar usuário auth com email:', email);
@@ -56,25 +65,11 @@ export async function POST(request: NextRequest) {
     let authUserId = authData?.user?.id || null;
     if (authError || !authUserId) {
       const msg = String(authError?.message || '').toLowerCase();
-      const isAlready = msg.includes('already been registered') || msg.includes('already registered');
-      if (!isAlready) {
-        return NextResponse.json({ error: `Erro ao criar conta: ${authError?.message || 'Erro desconhecido'}` }, { status: 500 });
+      const isAlready = msg.includes('already been registered') || msg.includes('already registered') || msg.includes('user already exists');
+      if (isAlready) {
+        return NextResponse.json({ error: 'E-mail já registrado. Faça login ou recupere sua senha.' }, { status: 400 });
       }
-      const pageSize = 200;
-      let page = 1;
-      let foundId: string | null = null;
-      for (let i = 0; i < 5; i++) {
-        const { data: list } = await supabase.auth.admin.listUsers({ page, perPage: pageSize });
-        const hit = (list?.users || []).find(u => (u.email || '').toLowerCase() === email.toLowerCase());
-        if (hit) { foundId = hit.id; break; }
-        if (!list || (list.users || []).length < pageSize) break;
-        page++;
-      }
-      if (!foundId) {
-        return NextResponse.json({ error: 'E-mail já registrado. Use recuperar senha.' }, { status: 400 });
-      }
-      await supabase.auth.admin.updateUserById(foundId, { password, user_metadata: { name, salon_slug: salon.slug } });
-      authUserId = foundId;
+      return NextResponse.json({ error: `Erro ao criar conta: ${authError?.message || 'Erro desconhecido'}` }, { status: 500 });
     }
 
     console.log('✅ Usuário auth resolvido, ID:', authUserId);
@@ -82,6 +77,15 @@ export async function POST(request: NextRequest) {
     // Criar salão
     console.log('🏢 Tentando criar salão com slug:', salon.slug);
     
+    const { data: existingSlug } = await supabase
+      .from('salons')
+      .select('id')
+      .eq('slug', salon.slug)
+      .maybeSingle();
+    if (existingSlug) {
+      return NextResponse.json({ error: 'Esta URL já está em uso. Por favor, escolha outra.' }, { status: 400 });
+    }
+
     const { data: salonData, error: salonError } = await supabase
       .from('salons')
       .insert([{ 
