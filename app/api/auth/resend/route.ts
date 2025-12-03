@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,16 +16,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 })
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
     const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://reserve-me-online.vercel.app'
-    const { error } = await supabase.auth.admin.inviteUserByEmail(email, { redirectTo: `${base}/login?verify=true` })
+    const admin = createClient(supabaseUrl, supabaseServiceKey)
+    const { error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo: `${base}/login?verify=true` })
     if (error) {
+      const msg = String(error.message || '').toLowerCase()
+      const isAlready = msg.includes('already been registered') || msg.includes('already registered')
+      if (!supabaseAnonKey) return NextResponse.json({ error: error.message }, { status: 500 })
+      const anon = createClient(supabaseUrl, supabaseAnonKey)
+      if (isAlready) {
+        const { error: resendErr } = await anon.auth.resend({ type: 'signup', email, options: { emailRedirectTo: `${base}/login?verify=true` } })
+        if (resendErr) return NextResponse.json({ error: resendErr.message }, { status: 500 })
+        return NextResponse.json({ success: true, method: 'resend' })
+      }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, method: 'invite' })
   } catch (error) {
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }
-
