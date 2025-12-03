@@ -11,6 +11,7 @@ export default function LoginPage() {
   });
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const verifyBanner = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('verify') === 'true';
@@ -58,6 +59,22 @@ export default function LoginPage() {
       setError(e instanceof Error ? e.message : 'Erro ao reenviar confirmação');
     } finally {
       setResending(false);
+    }
+  };
+
+  const confirmManually = async () => {
+    setConfirming(true);
+    setError('');
+    setInfo('');
+    try {
+      const r = await fetch('/api/auth/confirm', { method: 'POST', credentials: 'include' });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j?.error || 'Falha ao confirmar');
+      setInfo('E-mail marcado como confirmado. Faça login normalmente.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao confirmar');
+    } finally {
+      setConfirming(false);
     }
   };
 
@@ -114,10 +131,14 @@ export default function LoginPage() {
                   placeholder="seu@email.com"
                 />
               </div>
-              <div className="mt-2 text-right">
+              <div className="mt-2 flex items-center justify-end gap-3">
                 <button type="button" onClick={resendConfirmation} disabled={resending || !formData.email}
                   className="text-xs text-orange-600 hover:text-orange-700">
                   {resending ? 'Reenviando…' : 'Reenviar confirmação'}
+                </button>
+                <button type="button" onClick={confirmManually} disabled={confirming}
+                  className="text-xs text-gray-600 hover:text-gray-800">
+                  {confirming ? 'Confirmando…' : 'Confirmar manualmente'}
                 </button>
               </div>
             </div>
