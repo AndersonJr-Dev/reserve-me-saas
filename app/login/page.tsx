@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Calendar, Mail, Lock, ArrowRight } from 'lucide-react';
 
@@ -9,12 +9,12 @@ export default function LoginPage() {
     email: '',
     password: ''
   });
+  const verifyBanner = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('verify') === 'true';
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
-  const [confirming, setConfirming] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState<number>(verifyBanner ? 60 : 0);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
-  const verifyBanner = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('verify') === 'true';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +46,12 @@ export default function LoginPage() {
     }
   };
 
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
+
   const resendConfirmation = async () => {
     setResending(true);
     setError('');
@@ -55,26 +61,11 @@ export default function LoginPage() {
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j?.error || 'Falha ao reenviar confirmação');
       setInfo('E-mail de confirmação reenviado. Verifique sua caixa de entrada e spam.');
+      setResendCooldown(60);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao reenviar confirmação');
     } finally {
       setResending(false);
-    }
-  };
-
-  const confirmManually = async () => {
-    setConfirming(true);
-    setError('');
-    setInfo('');
-    try {
-      const r = await fetch('/api/auth/confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: formData.email }), credentials: 'include' });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j?.error || 'Falha ao confirmar');
-      setInfo('E-mail marcado como confirmado. Faça login normalmente.');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erro ao confirmar');
-    } finally {
-      setConfirming(false);
     }
   };
 
@@ -131,16 +122,18 @@ export default function LoginPage() {
                   placeholder="seu@email.com"
                 />
               </div>
-              <div className="mt-2 flex items-center justify-end gap-3">
-                <button type="button" onClick={resendConfirmation} disabled={resending || !formData.email}
-                  className="text-xs text-orange-600 hover:text-orange-700">
-                  {resending ? 'Reenviando…' : 'Reenviar confirmação'}
-                </button>
-                <button type="button" onClick={confirmManually} disabled={confirming}
-                  className="text-xs text-gray-600 hover:text-gray-800">
-                  {confirming ? 'Confirmando…' : 'Confirmar manualmente'}
-                </button>
-              </div>
+              {verifyBanner && (
+                <div className="mt-2 flex items-center justify-end">
+                  <button
+                    type="button"
+                    onClick={resendConfirmation}
+                    disabled={resending || !formData.email || resendCooldown > 0}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${resending || resendCooldown > 0 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600'}`}
+                  >
+                    {resending ? 'Reenviando…' : resendCooldown > 0 ? `Disponível em ${resendCooldown}s` : 'Reenviar confirmação'}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div>

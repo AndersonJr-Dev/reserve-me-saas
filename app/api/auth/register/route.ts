@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         address: salon.address,
         owner_id: authUserId,
         plan_type: trial && plan === 'basic' ? 'basic' : 'free',
-        subscription_status: trial && plan === 'basic' ? 'inactive' : 'inactive'
+        subscription_status: trial && plan === 'basic' ? 'trial' : 'inactive'
       }])
       .select()
       .single();

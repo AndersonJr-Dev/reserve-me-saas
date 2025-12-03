@@ -31,6 +31,8 @@ export default function Dashboard() {
   const [salonSlug, setSalonSlug] = useState<string | null>(null);
   const [planType, setPlanType] = useState<string | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [trialActive, setTrialActive] = useState<boolean>(false);
+  const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [userName, setUserName] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export default function Dashboard() {
   useEffect(() => {
     const refetchBreakdown = async () => {
       if (!salonId) return;
-      const hasPaidPlan = ['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active';
+      const hasPaidPlan = ['basic','advanced','premium'].includes((planType || '').toLowerCase()) && (subscriptionStatus === 'active' || (subscriptionStatus === 'trial' && trialActive));
       if (!hasPaidPlan) return;
       let breakdown;
       let startISO: string;
@@ -99,7 +101,7 @@ export default function Dashboard() {
       setPeriodCount(breakdown?.count || 0);
     };
     refetchBreakdown();
-  }, [segPeriod, segProId, segServiceId, planType, subscriptionStatus, salonId, role]);
+  }, [segPeriod, segProId, segServiceId, planType, subscriptionStatus, salonId, role, trialActive]);
 
   useEffect(() => {
     const playBeep = () => {
@@ -167,6 +169,8 @@ export default function Dashboard() {
         const finalSubscriptionStatus: string | null = meJson?.user?.subscriptionStatus ?? null;
         const finalUserName: string | null = meJson?.user?.name ?? null;
         const finalRole: string | null = meJson?.user?.role ?? null;
+        const finalTrialActive: boolean = !!meJson?.user?.trialActive;
+        const finalTrialEndsAt: string | null = meJson?.user?.trialEndsAt ?? null;
 
         if (!finalSalonId) {
           console.error('ERRO: Salão não encontrado para este usuário.');
@@ -178,6 +182,8 @@ export default function Dashboard() {
         setSalonSlug(finalSalonSlug);
         setPlanType(finalPlanType);
         setSubscriptionStatus(finalSubscriptionStatus);
+        setTrialActive(finalTrialActive);
+        setTrialEndsAt(finalTrialEndsAt);
         setUserName(finalUserName);
         setRole(finalRole);
         try {
@@ -233,7 +239,7 @@ export default function Dashboard() {
           <p className="text-sm font-medium text-gray-500 animate-pulse">Carregando Reserve.me...</p>
         </div>
 
-        {(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') && (
+        {(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && (subscriptionStatus === 'active' || (subscriptionStatus === 'trial' && trialActive))) && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
           <div className="bg_white p-6 rounded-xl shadow-sm border">
               <div className="flex items-center justify-between mb-3">
@@ -278,7 +284,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') && (
+        {(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && (subscriptionStatus === 'active' || (subscriptionStatus === 'trial' && trialActive))) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             <div className="bg-white p-6 rounded-xl shadow-sm border">
               <div className="flex items-center justify-between mb-4">
@@ -591,6 +597,54 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
+
+      {subscriptionStatus === 'trial' && !trialActive && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+          <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <div className="text-orange-800 font-semibold">Seu teste de 7 dias terminou</div>
+              <div className="text-orange-700 text-sm">Deseja continuar no Plano Básico? Caso contrário, voltará para o Plano Grátis.</div>
+              {trialEndsAt && (
+                <div className="text-xs text-orange-600 mt-1">Término: {new Date(trialEndsAt).toLocaleDateString('pt-BR')} {new Date(trialEndsAt).toLocaleTimeString('pt-BR')}</div>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/payment/create', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ planKey: 'basic', customerEmail: (typeof window !== 'undefined' ? window.localStorage.getItem('last_email') : null) || undefined, successPath: '/payment/success', cancelPath: '/payment/failure' })
+                    });
+                    const j = await res.json();
+                    if (res.ok && j.checkoutUrl) {
+                      window.location.href = j.checkoutUrl;
+                    }
+                  } catch {}
+                }}
+                className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg shadow hover:from-orange-600 hover:to-red-600"
+              >
+                Continuar no Básico
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const r = await fetch('/api/dashboard/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ planType: 'free', subscriptionStatus: 'inactive' }) });
+                    if (r.ok) {
+                      setPlanType('free');
+                      setSubscriptionStatus('inactive');
+                    }
+                  } catch {}
+                }}
+                className="px-4 py-2 rounded-lg border border-orange-300 text-orange-700 bg-white hover:bg-orange-50"
+              >
+                Ir para Plano Grátis
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-8">
@@ -703,7 +757,7 @@ export default function Dashboard() {
                 </select>
               </div>
             </div>
-            {(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? (
+            {(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && (subscriptionStatus === 'active' || (subscriptionStatus === 'trial' && trialActive))) ? (
               <div className="grid lg:grid-cols-3 gap-6">
                 <div>
                   <h3 className="text-sm font-semibold text-black mb-2">Top Serviços</h3>

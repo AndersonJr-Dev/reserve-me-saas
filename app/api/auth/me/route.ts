@@ -60,7 +60,7 @@ export async function GET() {
     // Buscar dados completos do usuário na tabela users usando service role
     const { data: userData, error: userError } = await supabaseService
       .from('users')
-      .select('*, salons(slug, plan_type, subscription_status)')
+      .select('*, salons(slug, plan_type, subscription_status, created_at)')
       .eq('id', user.id)
       .single();
 
@@ -83,6 +83,7 @@ export async function GET() {
     let salonSlug = userData.salons?.slug || null;
     const planType = userData.salons?.plan_type || null;
     let subscriptionStatus = userData.salons?.subscription_status || null;
+    const salonCreatedAt = userData.salons?.created_at || null;
     if (!salonSlug && userData.salon_id) {
       const { data: salonData, error: salonError } = await supabaseService
         .from('salons')
@@ -95,12 +96,20 @@ export async function GET() {
       }
     }
 
-    if (userData.salons && planType === 'basic' && subscriptionStatus === 'inactive' && user.email_confirmed_at) {
-      await supabaseService
-        .from('salons')
-        .update({ subscription_status: 'active', updated_at: new Date().toISOString() })
-        .eq('id', userData.salon_id);
-      subscriptionStatus = 'active';
+    let trialActive = false;
+    let trialEndsAt: string | null = null;
+    if (userData.salons && planType === 'basic' && subscriptionStatus === 'trial' && salonCreatedAt) {
+      const start = new Date(salonCreatedAt);
+      const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+      trialEndsAt = end.toISOString();
+      trialActive = new Date() < end;
+      if (!trialActive) {
+        subscriptionStatus = 'inactive';
+        await supabaseService
+          .from('salons')
+          .update({ plan_type: 'free', subscription_status: 'inactive', updated_at: new Date().toISOString() })
+          .eq('id', userData.salon_id);
+      }
     }
 
     return NextResponse.json({
@@ -112,7 +121,9 @@ export async function GET() {
         salonId: userData.salon_id,
         salonSlug,
         planType,
-        subscriptionStatus
+        subscriptionStatus,
+        trialActive,
+        trialEndsAt
       }
     });
   } catch (error) {

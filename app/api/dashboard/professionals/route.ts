@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     const { data: salonData, error: salonError } = await supabaseService
       .from('salons')
-      .select('id, plan_type, subscription_status')
+      .select('id, plan_type, subscription_status, created_at')
       .eq('id', userData.salon_id)
       .maybeSingle();
 
@@ -134,12 +134,13 @@ export async function POST(request: NextRequest) {
     const subscriptionStatus = salonData && 'subscription_status' in salonData
       ? (salonData.subscription_status as string | null) || 'inactive'
       : 'inactive';
-    const isPaidPlanActive = subscriptionStatus === 'active' && currentPlan !== 'free';
-    const allowedProfessionals = (userData?.role === 'admin')
-      ? Number.POSITIVE_INFINITY
-      : (isPaidPlanActive
-          ? (MAX_PROFESSIONALS_BY_PLAN[currentPlan] ?? MAX_PROFESSIONALS_BY_PLAN.premium)
-          : MAX_PROFESSIONALS_BY_PLAN.free);
+    const trialActive = subscriptionStatus === 'trial' && salonData?.created_at
+      ? (new Date(salonData.created_at).getTime() + 7 * 24 * 60 * 60 * 1000) > Date.now()
+      : false;
+    const isPlanActive = (subscriptionStatus === 'active') || (trialActive);
+    const allowedProfessionals = (isPlanActive && currentPlan !== 'free')
+      ? (MAX_PROFESSIONALS_BY_PLAN[currentPlan] ?? MAX_PROFESSIONALS_BY_PLAN.premium)
+      : MAX_PROFESSIONALS_BY_PLAN.free;
 
     const { count: professionalsCount, error: countError } = await supabaseService
       .from('professionals')
