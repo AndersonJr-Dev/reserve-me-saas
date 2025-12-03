@@ -193,8 +193,16 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      await supabase.auth.admin.inviteUserByEmail(email);
-    } catch {}
+      const base = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : undefined) || 'https://reserve-me-online.vercel.app';
+      const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email, { redirectTo: `${base}/login` });
+      if (inviteErr) {
+        console.error('Erro ao enviar convite/confirmacao:', inviteErr);
+      } else {
+        console.log('Convite/confirmacao enviado para', email);
+      }
+    } catch (e) {
+      console.error('Falha ao enviar email de confirmacao:', e);
+    }
 
     return response;
   } catch (error) {
