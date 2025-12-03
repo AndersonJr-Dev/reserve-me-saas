@@ -79,20 +79,24 @@ export async function GET() {
 
     console.log('✅ Usuário encontrado:', userData.name);
 
-    // Buscar slug do salão com fallback se relação não estiver configurada
+    // Buscar dados do salão com fallback robusto se relação não estiver configurada
     let salonSlug = userData.salons?.slug || null;
-    const planType = userData.salons?.plan_type || null;
+    let planType = userData.salons?.plan_type || null;
     let subscriptionStatus = userData.salons?.subscription_status || null;
-    const salonCreatedAt = userData.salons?.created_at || null;
-    if (!salonSlug && userData.salon_id) {
+    let salonCreatedAt = userData.salons?.created_at || null;
+
+    if ((!salonSlug || !planType || !subscriptionStatus || !salonCreatedAt) && userData.salon_id) {
       const { data: salonData, error: salonError } = await supabaseService
         .from('salons')
-        .select('slug')
+        .select('slug, plan_type, subscription_status, created_at')
         .eq('id', userData.salon_id)
         .single();
 
-      if (!salonError && salonData?.slug) {
-        salonSlug = salonData.slug;
+      if (!salonError && salonData) {
+        salonSlug = salonData.slug ?? salonSlug;
+        planType = salonData.plan_type ?? planType;
+        subscriptionStatus = salonData.subscription_status ?? subscriptionStatus;
+        salonCreatedAt = salonData.created_at ?? salonCreatedAt;
       }
     }
 
