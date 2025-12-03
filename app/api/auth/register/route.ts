@@ -193,15 +193,14 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://reserve-me-online.vercel.app';
-      const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email, { redirectTo: `${base}/login?verify=true` });
+      const origin = process.env.NEXT_PUBLIC_BASE_URL || new URL(request.url).origin;
+      const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email, { redirectTo: `${origin}/login?verify=true` });
       if (inviteErr) {
-        const msg = String(inviteErr.message || '').toLowerCase();
         console.error('Erro ao enviar convite/confirmacao:', inviteErr);
         const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        if (anonKey && (msg.includes('already been registered') || msg.includes('already registered'))) {
+        if (anonKey) {
           const anon = createClient(supabaseUrl, anonKey);
-          const { error: resendErr } = await anon.auth.resend({ type: 'signup', email, options: { emailRedirectTo: `${base}/login?verify=true` } });
+          const { error: resendErr } = await anon.auth.resend({ type: 'signup', email, options: { emailRedirectTo: `${origin}/login?verify=true` } });
           if (resendErr) console.error('Falha ao reenviar confirmacao:', resendErr);
         }
       } else {

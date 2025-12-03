@@ -67,7 +67,7 @@ export default function LoginPage() {
     setError('');
     setInfo('');
     try {
-      const r = await fetch('/api/auth/confirm', { method: 'POST', credentials: 'include' });
+      const r = await fetch('/api/auth/confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: formData.email }), credentials: 'include' });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j?.error || 'Falha ao confirmar');
       setInfo('E-mail marcado como confirmado. Faça login normalmente.');
