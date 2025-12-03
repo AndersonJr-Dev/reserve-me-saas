@@ -110,14 +110,15 @@ export async function POST(request: NextRequest) {
     
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .insert([{
-        id: authData.user.id,
-        name,
-        email,
-        role: 'owner',
-        salon_id: salonData.id,
-        is_active: true
-      }])
+      .insert([
+        {
+          id: authData.user.id,
+          name,
+          email,
+          role: 'admin',
+          salon_id: salonData.id
+        }
+      ])
       .select()
       .single();
 

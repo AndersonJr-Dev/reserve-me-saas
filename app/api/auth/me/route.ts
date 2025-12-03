@@ -72,7 +72,7 @@ export async function GET() {
           id: user.id,
           name: user.user_metadata?.name || user.email,
           email: user.email,
-          role: user.user_metadata?.role || 'owner',
+          role: user.user_metadata?.role || 'admin',
           salonId: user.user_metadata?.salon_id
         }
       });

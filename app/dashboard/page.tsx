@@ -234,7 +234,7 @@ export default function Dashboard() {
           <p className="text-sm font-medium text-gray-500 animate-pulse">Carregando Reserve.me...</p>
         </div>
 
-        {(((role || '').toLowerCase() === 'admin') || (['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active')) && (
+        {(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
           <div className="bg_white p-6 rounded-xl shadow-sm border">
               <div className="flex items-center justify-between mb-3">
@@ -279,7 +279,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {(((role || '').toLowerCase() === 'admin') || (['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active')) && (
+        {(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             <div className="bg-white p-6 rounded-xl shadow-sm border">
               <div className="flex items-center justify-between mb-4">

@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
           id: authData.user.id,
           name: authData.user.user_metadata?.name || email,
           email: authData.user.email,
-          role: 'owner',
+          role: 'admin',
           salonId: authData.user.user_metadata?.salon_id
         },
         token: authData.session.access_token
