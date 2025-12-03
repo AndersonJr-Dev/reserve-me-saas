@@ -65,9 +65,8 @@ export default function Dashboard() {
   useEffect(() => {
     const refetchBreakdown = async () => {
       if (!salonId) return;
-      const isAdmin = (role || '').toLowerCase() === 'admin';
       const hasPaidPlan = ['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active';
-      if (!isAdmin && !hasPaidPlan) return;
+      if (!hasPaidPlan) return;
       let breakdown;
       let startISO: string;
       let endISO: string;
@@ -666,10 +665,10 @@ export default function Dashboard() {
                     { v: '7', label: '7d' },
                     { v: '30', label: '30d' },
                   ].concat(
-                    (((role || '').toLowerCase() === 'admin') || ((planType || '').toLowerCase() === 'advanced' && subscriptionStatus === 'active') || ((planType || '').toLowerCase() === 'premium' && subscriptionStatus === 'active'))
+                    (((planType || '').toLowerCase() === 'advanced' && subscriptionStatus === 'active') || ((planType || '').toLowerCase() === 'premium' && subscriptionStatus === 'active'))
                       ? [{ v: '90', label: '90d' }] : []
                   ).concat(
-                    (((role || '').toLowerCase() === 'admin') || ((planType || '').toLowerCase() === 'premium' && subscriptionStatus === 'active'))
+                    (((planType || '').toLowerCase() === 'premium' && subscriptionStatus === 'active'))
                       ? [{ v: '120', label: '120d' }] : []
                   ) as { v: typeof segPeriod; label: string }[]).map(opt => (
                     <button
@@ -704,7 +703,7 @@ export default function Dashboard() {
                 </select>
               </div>
             </div>
-            {(((role || '').toLowerCase() === 'admin') || (['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active')) ? (
+            {(['basic','advanced','premium'].includes((planType || '').toLowerCase()) && subscriptionStatus === 'active') ? (
               <div className="grid lg:grid-cols-3 gap-6">
                 <div>
                   <h3 className="text-sm font-semibold text-black mb-2">Top Serviços</h3>
