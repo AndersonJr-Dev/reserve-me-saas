@@ -53,19 +53,31 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    if (authError || !authData.user) {
-      console.error('❌ Erro ao criar usuário auth:', authError);
-      console.error('❌ Detalhes do erro:', JSON.stringify(authError, null, 2));
-      return NextResponse.json(
-        { 
-          error: `Erro ao criar conta: ${authError?.message || 'Erro desconhecido'}`,
-          errorCode: authError?.status || null
-        },
-        { status: 500 }
-      );
+    let authUserId = authData?.user?.id || null;
+    if (authError || !authUserId) {
+      const msg = String(authError?.message || '').toLowerCase();
+      const isAlready = msg.includes('already been registered') || msg.includes('already registered');
+      if (!isAlready) {
+        return NextResponse.json({ error: `Erro ao criar conta: ${authError?.message || 'Erro desconhecido'}` }, { status: 500 });
+      }
+      const pageSize = 200;
+      let page = 1;
+      let foundId: string | null = null;
+      for (let i = 0; i < 5; i++) {
+        const { data: list } = await supabase.auth.admin.listUsers({ page, perPage: pageSize });
+        const hit = (list?.users || []).find(u => (u.email || '').toLowerCase() === email.toLowerCase());
+        if (hit) { foundId = hit.id; break; }
+        if (!list || (list.users || []).length < pageSize) break;
+        page++;
+      }
+      if (!foundId) {
+        return NextResponse.json({ error: 'E-mail já registrado. Use recuperar senha.' }, { status: 400 });
+      }
+      await supabase.auth.admin.updateUserById(foundId, { password, user_metadata: { name, salon_slug: salon.slug } });
+      authUserId = foundId;
     }
 
-    console.log('✅ Usuário auth criado com sucesso, ID:', authData.user.id);
+    console.log('✅ Usuário auth resolvido, ID:', authUserId);
 
     // Criar salão
     console.log('🏢 Tentando criar salão com slug:', salon.slug);
@@ -79,7 +91,7 @@ export async function POST(request: NextRequest) {
         phone: salon.phone,
         email: salon.email,
         address: salon.address,
-        owner_id: authData.user.id,
+        owner_id: authUserId,
         plan_type: trial && plan === 'basic' ? 'basic' : 'free',
         subscription_status: trial && plan === 'basic' ? 'inactive' : 'inactive'
       }])
@@ -92,7 +104,7 @@ export async function POST(request: NextRequest) {
       
       // Se falhar ao criar salão, tentar deletar o usuário auth criado
       console.log('🧹 Limpando usuário auth criado...');
-      await supabase.auth.admin.deleteUser(authData.user.id);
+      if (authUserId) await supabase.auth.admin.deleteUser(authUserId);
       
       return NextResponse.json(
         { 
@@ -112,7 +124,7 @@ export async function POST(request: NextRequest) {
       .from('users')
       .insert([
         {
-          id: authData.user.id,
+          id: authUserId!,
           name,
           email,
           role: 'admin',
@@ -129,7 +141,7 @@ export async function POST(request: NextRequest) {
       // Se falhar ao criar usuário na tabela, tentar limpar o salão e usuário auth
       console.log('🧹 Limpando dados criados...');
       await supabase.from('salons').delete().eq('id', salonData.id);
-      await supabase.auth.admin.deleteUser(authData.user.id);
+      if (authUserId) await supabase.auth.admin.deleteUser(authUserId);
       
       return NextResponse.json(
         { 

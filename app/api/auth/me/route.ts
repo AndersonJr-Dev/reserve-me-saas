@@ -66,14 +66,13 @@ export async function GET() {
 
     if (userError || !userData) {
       console.error('❌ Usuário não encontrado na tabela users:', userError);
-      // Se não encontrar na tabela users, retornar dados básicos
       return NextResponse.json({
         user: {
           id: user.id,
-          name: user.user_metadata?.name || user.email,
+          name: (user.user_metadata?.name as string) || (user.user_metadata?.full_name as string) || user.email || 'Usuário',
           email: user.email,
-          role: user.user_metadata?.role || 'admin',
-          salonId: user.user_metadata?.salon_id
+          role: (user.user_metadata?.role as string) || 'admin',
+          salonId: (user.user_metadata?.salon_id as string | null) || null
         }
       });
     }
@@ -107,8 +106,8 @@ export async function GET() {
     return NextResponse.json({
       user: {
         id: userData.id,
-        name: userData.name,
-        email: userData.email,
+        name: userData.name || (user.user_metadata?.name as string) || (user.user_metadata?.full_name as string) || user.email || 'Usuário',
+        email: userData.email || user.email,
         role: userData.role,
         salonId: userData.salon_id,
         salonSlug,
@@ -122,5 +121,48 @@ export async function GET() {
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
+  }
+}
+
+// DELETE /api/auth/me - Apagar toda a conta e dados associados
+export async function DELETE() {
+  try {
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('sb-access-token')?.value;
+    if (!accessToken) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+
+    const supabaseService = getSupabaseAdmin();
+    if (!supabaseService) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+    if (!supabaseUrl || !supabaseAnonKey) return NextResponse.json({ error: 'Configuração do servidor incompleta' }, { status: 500 });
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${accessToken}` } }
+    });
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+
+    const { data: userRow } = await supabaseService
+      .from('users')
+      .select('id, salon_id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const salonId = userRow?.salon_id || null;
+    if (salonId) {
+      await supabaseService.from('appointments').delete().eq('salon_id', salonId);
+      await supabaseService.from('professionals').delete().eq('salon_id', salonId);
+      await supabaseService.from('services').delete().eq('salon_id', salonId);
+      await supabaseService.from('salons').delete().eq('id', salonId);
+    }
+    await supabaseService.from('users').delete().eq('id', user.id);
+    await supabaseService.auth.admin.deleteUser(user.id);
+
+    const res = NextResponse.json({ success: true });
+    res.cookies.set('sb-access-token', '', { httpOnly: true, maxAge: 0 });
+    return res;
+  } catch (error) {
+    console.error('Erro ao apagar conta:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }
 }
