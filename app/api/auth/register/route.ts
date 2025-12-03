@@ -37,7 +37,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-  // Criar cliente com service role key
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { data: existingUser } = await supabase
@@ -49,9 +48,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'E-mail já registrado. Faça login ou recupere sua senha.' }, { status: 400 });
     }
 
-    // Criar usuário na autenticação do Supabase
-    console.log('📝 Tentando criar usuário auth com email:', email);
-    
+    const perPage = 200;
+    let existsInAuth = false;
+    for (let page = 1; page <= 5; page++) {
+      const { data: list } = await supabase.auth.admin.listUsers({ page, perPage });
+      if ((list?.users || []).some(u => (u.email || '').toLowerCase() === email.toLowerCase())) { existsInAuth = true; break; }
+      if (!list || (list.users || []).length < perPage) break;
+    }
+    if (existsInAuth) {
+      return NextResponse.json({ error: 'E-mail já registrado. Faça login ou recupere sua senha.' }, { status: 400 });
+    }
+
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -73,9 +80,6 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ Usuário auth resolvido, ID:', authUserId);
-
-    // Criar salão
-    console.log('🏢 Tentando criar salão com slug:', salon.slug);
     
     const { data: existingSlug } = await supabase
       .from('salons')
@@ -124,19 +128,32 @@ export async function POST(request: NextRequest) {
     // Criar usuário na tabela users
     console.log('👤 Tentando criar usuário na tabela users...');
     
-    const { data: userData, error: userError } = await supabase
+    const { data: existingById } = await supabase
       .from('users')
-      .insert([
-        {
-          id: authUserId!,
-          name,
-          email,
-          role: 'admin',
-          salon_id: salonData.id
-        }
-      ])
-      .select()
-      .single();
+      .select('id')
+      .eq('id', authUserId!)
+      .maybeSingle();
+
+    let userData;
+    let userError;
+    if (existingById) {
+      const { data, error } = await supabase
+        .from('users')
+        .update({ name, email, role: 'admin', salon_id: salonData.id })
+        .eq('id', authUserId!)
+        .select()
+        .single();
+      userData = data;
+      userError = error;
+    } else {
+      const { data, error } = await supabase
+        .from('users')
+        .insert([{ id: authUserId!, name, email, role: 'admin', salon_id: salonData.id }])
+        .select()
+        .single();
+      userData = data;
+      userError = error;
+    }
 
     if (userError || !userData) {
       console.error('❌ Erro ao criar usuário na tabela:', userError);
